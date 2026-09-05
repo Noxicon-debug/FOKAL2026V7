@@ -1,8 +1,8 @@
+import { lazy, Suspense } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import Layout from './components/layout/Layout';
 import { HomePage, ServicesPage, AboutPage, ContactPage, GalleryPage, BookingPage } from './pages/SitePages';
-import AdminPage from './pages/AdminPage';
 import LoginPage from './pages/LoginPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import NotFoundPage from './pages/NotFoundPage';
@@ -12,6 +12,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { Toaster } from 'react-hot-toast';
 import { Toaster as Sonner } from 'sonner';
 const queryClient = new QueryClient();
+const AdminPage = lazy(() => import('./pages/AdminPage'));
 
 import HoverReceiver from "@/visual-edits/VisualEditsMessenger";
 
@@ -35,7 +36,7 @@ function App() {
             path="/admin"
             element={
               <ProtectedRoute>
-                <AdminPage />
+                <Suspense fallback={<main className="route-loading">Loading dashboard…</main>}><AdminPage /></Suspense>
               </ProtectedRoute>
             }
           />
