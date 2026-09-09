@@ -60,11 +60,10 @@
         defer
     ></script>
     <form name="booking" method="POST" data-netlify="true" netlify-honeypot="bot-field" hidden>
-      <input type="text" name="name" />
-      <input type="email" name="email" />
-      <input type="text" name="phone" />
-      <input type="date" name="date" />
-      <input type="number" name="guests" />
+      <input name="form-name" value="booking" type="hidden" />
+      <input name="bot-field" /><input name="name" /><input name="organisation" />
+      <input name="email" type="email" /><input name="phone" />
+      <input name="organisation-type" /><input name="services" /><input name="consent" />
       <textarea name="message"></textarea>
     </form> 
     <form name="contact" method="POST" data-netlify="true" netlify-honeypot="bot-field" hidden>
