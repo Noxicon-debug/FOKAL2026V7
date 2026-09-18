@@ -2,7 +2,6 @@ import { lazy, Suspense } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import Layout from './components/layout/Layout';
-import { HomePage, ServicesPage, AboutPage, ContactPage, GalleryPage, BookingPage } from './pages/SitePages';
 import LoginPage from './pages/LoginPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import NotFoundPage from './pages/NotFoundPage';
@@ -13,6 +12,12 @@ import { Toaster } from 'react-hot-toast';
 import { Toaster as Sonner } from 'sonner';
 const queryClient = new QueryClient();
 const AdminPage = lazy(() => import('./pages/AdminPage'));
+const HomePage = lazy(() => import('./pages/SitePages').then(module => ({ default: module.HomePage })));
+const ServicesPage = lazy(() => import('./pages/SitePages').then(module => ({ default: module.ServicesPage })));
+const AboutPage = lazy(() => import('./pages/SitePages').then(module => ({ default: module.AboutPage })));
+const ContactPage = lazy(() => import('./pages/SitePages').then(module => ({ default: module.ContactPage })));
+const GalleryPage = lazy(() => import('./pages/SitePages').then(module => ({ default: module.GalleryPage })));
+const BookingPage = lazy(() => import('./pages/SitePages').then(module => ({ default: module.BookingPage })));
 
 import HoverReceiver from "@/visual-edits/VisualEditsMessenger";
 
@@ -46,7 +51,7 @@ function App() {
             path="*"
             element={
               <Layout>
-                <AnimatePresence mode="wait">
+                <Suspense fallback={<main className="route-loading">Loading…</main>}><AnimatePresence mode="wait">
                   <Routes location={location} key={location.pathname}>
                     <Route path="/" element={<HomePage />} />
                     <Route path="/services" element={<ServicesPage />} />
@@ -56,7 +61,7 @@ function App() {
                     <Route path="/booking" element={<BookingPage />} />
                     <Route path="*" element={<NotFoundPage />} />
                   </Routes>
-                </AnimatePresence>
+                </AnimatePresence></Suspense>
               </Layout>
             }
           />

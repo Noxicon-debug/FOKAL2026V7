@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://fokalltd.com/sitemap.xml
