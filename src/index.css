@@ -176,3 +176,7 @@ body{background:#eaf1fa;background-image:radial-gradient(circle at 8% 18%,rgba(2
 .project-img-wrap:has(.facebook-project-video){aspect-ratio:auto}.facebook-project-video a{display:block;padding:8px 12px;background:#fff;color:#0754a6;font-size:13px}.facebook-project-video .project-video{height:auto;aspect-ratio:16/9}
 
 .quote-layout aside,.quote-layout aside h2,.quote-layout .quote-step strong{color:#111}.quote-layout aside small,.quote-layout .quote-step span{color:#555}.quote-layout .quote-step>b{background:#e5e7eb;color:#111}.booking-services{border:1px solid #cbd5e1;border-radius:8px;padding:18px}.booking-services legend{font-weight:700;color:#111}.booking-services>p{color:#555;font-size:13px}.booking-services h3{font-size:14px;margin:16px 0 8px}.booking-services label{display:flex;align-items:flex-start;gap:10px;padding:7px 0;font-size:13px;color:#333}.booking-services input[type=checkbox]{width:18px;height:18px;flex-shrink:0;margin-top:1px}.fokal-form button:disabled{opacity:.6;cursor:wait}
+
+/* In-page navigation and non-interactive homepage project previews. */
+#team-profiles,#clients{scroll-margin-top:104px}.home-project-card-static{cursor:default}.home-project-card-static:hover{transform:none;box-shadow:0 12px 32px rgba(16,38,72,.1);border-color:var(--glass-line)}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
