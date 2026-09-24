@@ -6,6 +6,7 @@ export default function BackgroundVideo({ asset, className = '', priority = fals
   const ref = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
   const [posterReady, setPosterReady] = useState(false);
+  const [posterFailed, setPosterFailed] = useState(false);
   const [visible, setVisible] = useState(false);
   const [src, setSrc] = useState<string>();
   const [playing, setPlaying] = useState(false);
@@ -37,7 +38,7 @@ export default function BackgroundVideo({ asset, className = '', priority = fals
     else if (src) video.current?.play().catch(() => setPlaying(false));
   }, [visible, blocked, src]);
   return <div ref={ref} className={`background-media ${className}`}>
-    <ResponsiveImage asset={asset.poster} priority={priority} sizes="100vw" alt={ariaLabel ?? ''} onLoad={() => setPosterReady(true)}/>
+    <ResponsiveImage asset={posterFailed ? {fallback:'/media/home-1280.webp'} : asset.poster} priority={priority} sizes="100vw" alt={ariaLabel ?? ''} onLoad={() => setPosterReady(true)} onError={() => { if (posterFailed) setPosterReady(true); else setPosterFailed(true); }}/>
     {src && <video ref={video} src={src} autoPlay muted loop playsInline preload="none" aria-hidden="true" className={playing ? 'is-playing' : ''} onPlaying={() => setPlaying(true)} onError={() => setPlaying(false)}/>}
   </div>;
 }
