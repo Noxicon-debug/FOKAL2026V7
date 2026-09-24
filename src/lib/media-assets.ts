@@ -1,3 +1,8 @@
+import optimizedMedia from './optimized-media.json';
+export function optimizedImage(src: string): ResponsiveImageAsset {
+  const name = (optimizedMedia as Record<string,string>)[src];
+  return name ? {fallback:`/media/${name}-768.webp`,webp:Object.fromEntries([480,768,1280,1920].map(w=>[w,`/media/${name}-${w}.webp`]))} : {fallback:src};
+}
 export type ResponsiveImageAsset = {
   fallback: string;
   avif?: Record<number, string>;
@@ -18,7 +23,7 @@ export type ResponsiveVideoAsset = {
 const mediaCdn = import.meta.env.VITE_MEDIA_CDN_URL?.replace(/\/$/, '');
 
 export function responsiveImage(path: string, fallback: string, width?: number, height?: number): ResponsiveImageAsset {
-  if (!mediaCdn) return { fallback, width, height };
+  if (!mediaCdn) return { ...optimizedImage(fallback), width, height };
   const widths = [480, 768, 1280, 1920];
   const variants = (format: 'avif' | 'webp') => Object.fromEntries(widths.map((size) => [size, `${mediaCdn}/images/${path}-${size}.${format}`]));
 

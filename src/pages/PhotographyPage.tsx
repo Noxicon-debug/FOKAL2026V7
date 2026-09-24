@@ -1,0 +1,3 @@
+import { Link } from 'react-router-dom';
+import CommandersCup, {cupTitle,cupIntro,cupDescription,cupPhotos} from '../components/media/CommandersCup';
+export default function PhotographyPage(){return <main className="light-page photography-page"><small>PHOTOGRAPHY</small><h1>{cupTitle}</h1><p>{cupIntro}</p><CommandersCup priority/>{cupDescription.split('\n\n').map(p=><p key={p}>{p}</p>)}<div className="photography-grid">{cupPhotos.map(photo=><img key={photo.src} src={photo.src} alt={photo.alt} loading="lazy" decoding="async"/>)}</div><Link className="blue-btn" to="/booking">ENQUIRE ABOUT PHOTOGRAPHY</Link></main>}

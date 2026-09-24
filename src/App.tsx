@@ -17,6 +17,8 @@ const ServicesPage = lazy(() => import('./pages/SitePages').then(module => ({ de
 const AboutPage = lazy(() => import('./pages/SitePages').then(module => ({ default: module.AboutPage })));
 const ContactPage = lazy(() => import('./pages/SitePages').then(module => ({ default: module.ContactPage })));
 const GalleryPage = lazy(() => import('./pages/SitePages').then(module => ({ default: module.GalleryPage })));
+const PhotographyPage = lazy(() => import('./pages/PhotographyPage'));
+const ProjectOverviewPage = lazy(() => import('./pages/SitePages').then(module => ({default:module.ProjectOverviewPage})));
 const BookingPage = lazy(() => import('./pages/SitePages').then(module => ({ default: module.BookingPage })));
 
 import HoverReceiver from "@/visual-edits/VisualEditsMessenger";
@@ -58,6 +60,8 @@ function App() {
                     <Route path="/about" element={<AboutPage />} />
                     <Route path="/contact" element={<ContactPage />} />
                     <Route path="/gallery" element={<GalleryPage />} />
+                    <Route path="/photography" element={<PhotographyPage />} />
+                    <Route path="/projects/:slug" element={<ProjectOverviewPage />} />
                     <Route path="/booking" element={<BookingPage />} />
                     <Route path="*" element={<NotFoundPage />} />
                   </Routes>
