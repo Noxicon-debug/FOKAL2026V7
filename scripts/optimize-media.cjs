@@ -13,7 +13,14 @@ async function main() {
   execFileSync(ffmpeg,['-y','-i','public/videos/fokal-postcards.m4v','-frames:v','1',`${out}/poster.png`],{stdio:'ignore'});
   await images(`${out}/poster.png`,'home');
   fs.unlinkSync(`${out}/poster.png`);
-  for (const [size,width] of [['mobile',640],['desktop',1280]]) execFileSync(ffmpeg,['-y','-i','public/videos/fokal-postcards.m4v','-t','18','-an','-vf',`scale=${width}:-2,fps=24`,'-c:v','libx264','-preset','fast','-crf','29','-pix_fmt','yuv420p','-movflags','+faststart',`${out}/home-${size}.mp4`],{stdio:'ignore'});
+  for (const [size, width, quality] of [['mobile', 1280, 27], ['desktop', 1920, 25]]) {
+    execFileSync(ffmpeg, [
+      '-y', '-i', 'public/videos/fokal-postcards.m4v', '-t', '18', '-an',
+      '-vf', `scale=${width}:-2,fps=24`, '-c:v', 'libx264', '-preset', 'fast',
+      '-crf', String(quality), '-pix_fmt', 'yuv420p', '-movflags', '+faststart',
+      `${out}/home-${size}.mp4`,
+    ], { stdio: 'ignore' });
+  }
   const source=fs.readFileSync('src/pages/SitePages.tsx','utf8');
   const urls=[...new Set(source.match(/https:\/\/[^'"\s]+\.(?:jpg|jpeg|png)(?:\?[^'"\s]+)?/gi)||[])];
   const manifest={};

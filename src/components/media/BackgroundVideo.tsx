@@ -1,8 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ResponsiveVideoAsset } from '../../lib/media-assets';
 import ResponsiveImage from './ResponsiveImage';
-type Props = { asset: ResponsiveVideoAsset; className?: string; priority?: boolean; ariaLabel?: string };
-export default function BackgroundVideo({ asset, className = '', priority = false, ariaLabel }: Props) {
+type Props = {
+  asset: ResponsiveVideoAsset;
+  className?: string;
+  priority?: boolean;
+  ariaLabel?: string;
+  paused?: boolean;
+};
+export default function BackgroundVideo({
+  asset, className = '', priority = false, ariaLabel, paused = false,
+}: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
   const [posterReady, setPosterReady] = useState(false);
@@ -24,7 +32,7 @@ export default function BackgroundVideo({ asset, className = '', priority = fals
   }, []);
   useEffect(() => {
     if (blocked) { setSrc(undefined); setPlaying(false); return; }
-    if (!posterReady || !visible || src || !asset.desktop) return;
+    if (!posterReady || !visible || paused || src || !asset.desktop) return;
     const start = () => setSrc(matchMedia('(max-width: 600px)').matches ? asset.mobile ?? asset.desktop : asset.desktop);
     if ('requestIdleCallback' in window) {
       const id = window.requestIdleCallback(start, { timeout: 2000 });
@@ -32,13 +40,13 @@ export default function BackgroundVideo({ asset, className = '', priority = fals
     }
     const timer = setTimeout(start, 250);
     return () => clearTimeout(timer);
-  }, [posterReady, visible, blocked, src, asset.mobile, asset.desktop]);
+  }, [posterReady, visible, blocked, paused, src, asset.mobile, asset.desktop]);
   useEffect(() => {
-    if (!visible || blocked) video.current?.pause();
+    if (!visible || blocked || paused) video.current?.pause();
     else if (src) video.current?.play().catch(() => setPlaying(false));
-  }, [visible, blocked, src]);
+  }, [visible, blocked, paused, src]);
   return <div ref={ref} className={`background-media ${className}`}>
     <ResponsiveImage asset={posterFailed ? {fallback:'/media/home-1280.webp'} : asset.poster} priority={priority} sizes="100vw" alt={ariaLabel ?? ''} onLoad={() => setPosterReady(true)} onError={() => { if (posterFailed) setPosterReady(true); else setPosterFailed(true); }}/>
-    {src && <video ref={video} src={src} autoPlay muted loop playsInline preload="none" aria-hidden="true" className={playing ? 'is-playing' : ''} onPlaying={() => setPlaying(true)} onError={() => setPlaying(false)}/>}
+    {src && <video ref={video} src={src} muted loop playsInline preload="none" aria-hidden="true" className={playing ? 'is-playing' : ''} onPlaying={() => setPlaying(true)} onError={() => setPlaying(false)}/>}
   </div>;
 }

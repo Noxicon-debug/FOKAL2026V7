@@ -1,105 +1,31 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { GalleryAsset, GalleryProjectFields } from '../../types/gallery';
 import { supabase } from '../supabase';
-import { GalleryProject, GalleryProjectMedia } from '../../types/gallery';
 
-export const useAdminMutations = () => {
+export function useAdminMutations() {
   const queryClient = useQueryClient();
+  const refreshProjects = () => queryClient.invalidateQueries({ queryKey: ['gallery-projects'] });
 
-  const addProject = useMutation({
-    mutationFn: async (project: Omit<GalleryProject, 'id' | 'created_at'>) => {
-      const { data, error } = await supabase
-        .from('gallery_projects')
-        .insert(project)
-        .select()
-        .single();
+  const saveProject = useMutation({
+    mutationFn: async ({ project, assets }: {
+      project: GalleryProjectFields & { id?: number; revision?: number };
+      assets: GalleryAsset[];
+    }) => {
+      const { data, error } = await supabase.rpc('save_gallery_project', { project, assets });
       if (error) throw error;
-      return data;
+      return data as number;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['gallery-projects'] });
-    },
-  });
-
-  const updateProject = useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<GalleryProject> & { id: number }) => {
-      const { data, error } = await supabase
-        .from('gallery_projects')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['gallery-projects'] });
-    },
+    onSuccess: refreshProjects,
   });
 
   const deleteProject = useMutation({
-    mutationFn: async (id: number) => {
-      const { error } = await supabase
-        .from('gallery_projects')
-        .delete()
-        .eq('id', id);
+    mutationFn: async ({ id, revision }: { id: number; revision: number }) => {
+      const { error } = await supabase.from('gallery_projects').delete()
+        .eq('id', id).eq('revision', revision).select('id').single();
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['gallery-projects'] });
-    },
+    onSuccess: refreshProjects,
   });
 
-  const addMedia = useMutation({
-    mutationFn: async (media: Omit<GalleryProjectMedia, 'id' | 'created_at'>) => {
-      const { data, error } = await supabase
-        .from('gallery_project_media')
-        .insert(media)
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['gallery-projects'] });
-    },
-  });
-
-  const deleteMedia = useMutation({
-    mutationFn: async (id: number) => {
-      const { error } = await supabase
-        .from('gallery_project_media')
-        .delete()
-        .eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['gallery-projects'] });
-    },
-  });
-
-  const uploadFile = async (file: File, path: string) => {
-    const fileName = `${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
-    const fullPath = `${path}/${fileName}`;
-
-    const { error } = await supabase.storage
-      .from('gallery')
-      .upload(fullPath, file);
-
-    if (error) throw error;
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('gallery')
-      .getPublicUrl(fullPath);
-
-    return publicUrl;
-  };
-
-  return {
-    addProject,
-    updateProject,
-    deleteProject,
-    addMedia,
-    deleteMedia,
-    uploadFile
-  };
-};
+  return { saveProject, deleteProject };
+}

@@ -8,16 +8,21 @@ const homeClients = [
   { name: 'APTC', image: 'https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/CLIENTEL/APTC.png?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9DTElFTlRFTC9BUFRDLnBuZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODg5NTI2MzUsImV4cCI6MTgyMDQ4ODYzNX0.pmbFzVm3LxKJ5yKeVBv_AHtRekwM0NDB7zgAZ4TOjP4' },
   { name: 'UNCDF', image: 'https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/CLIENTEL/UNCDF.png?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9DTElFTlRFTC9VTkNERi5wbmciLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg4OTUyNjU0LCJleHAiOjE4MjA0ODg2NTR9.ILEEqS0bEiT7RJy-h-v-UBr_dK86Xu8I6v5_NSmcO-Q' },
 ];
-import { useState, useEffect } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { ArrowRight, CalendarDays, Camera, Check, ChevronDown, ChevronLeft, ChevronRight, Clock, Facebook, Heart, Instagram, Lightbulb, Linkedin, Mail, MapPin, Megaphone, MessageCircle, Music2, Phone, Radio, ShieldCheck, Star, Target, Users, Video, Award, Zap, Eye, X } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { galleryVideo } from '../lib/gallery-media';
+import { useGalleryCategories, useGalleryProjects } from '../lib/hooks/useGallery';
+import { projectStatuses, type ProjectStatus } from '../types/gallery';
+import * as Dialog from '@radix-ui/react-dialog';
 import { getPublicImageUrl } from '../lib/media';
-import { responsiveImage, responsiveVideo } from '../lib/media-assets';
+import { responsiveImage } from '../lib/media-assets';
 import ResponsiveImage from '../components/media/ResponsiveImage';
 import BackgroundVideo from '../components/media/BackgroundVideo';
 import ClickToPlay from '../components/media/ClickToPlay';
-import CommandersCup, {cupTitle,cupIntro,cupDescription} from '../components/media/CommandersCup';
+import {cupTitle,cupIntro,cupDescription,cupPhotos} from '../components/media/CommandersCup';
 import { optimizedImage } from '../lib/media-assets';
 
 
@@ -36,14 +41,15 @@ const IMG = {
 };
 // Set VITE_HERO_VIDEO_URL to the Supabase Storage public URL after its bucket is provisioned.
 const HERO_VIDEO_URL = import.meta.env.VITE_HERO_VIDEO_URL || '/videos/fokal-postcards.m4v';
+const SHOWREEL_CAPTIONS = import.meta.env.VITE_SHOWREEL_CAPTIONS_URL;
+const SHOWREEL_TRANSCRIPT = import.meta.env.VITE_SHOWREEL_TRANSCRIPT_URL;
 const CONTACT_HERO_VIDEO = 'https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/videos/BTS%20Slide%20reel.mov?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJ2aWRlb3MvQlRTIFNsaWRlIHJlZWwubW92Iiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4ODc5NTg0NiwiZXhwIjoxODIwMzMxODQ2fQ.uX5CRiIkZHseAFjwIuOrZ_DQrAF6sg84RA8DmP1hNLo';
 const CONTACT_MAP_EMBED = 'https://www.google.com/maps?q=-9.4554272,147.1855726&z=16&output=embed';
 const CONTACT_MAP_LINK = 'https://www.google.com/maps/place/FOKAL+SOLUTIONS+LTD/@-9.4554219,147.1829977,1112m/data=!3m2!1e3!4b1!4m6!3m5!1s0x6902313e709e52ed:0xc9ca5de553e7313d!8m2!3d-9.4554272!4d147.1855726!16s%2Fg%2F11zf333mjb?entry=ttu&g_ep=EgoyMDI2MDkwMi4wIKXMDSoASAFQAw%3D%3D';
-const HOME_HERO_IMAGE = {fallback:'/media/home-768.webp',webp:Object.fromEntries([480,768,1280,1920].map(w=>[w,`/media/home-${w}.webp`]))};
+const HOME_HERO_IMAGE = {fallback:'/media/home-1920.webp',webp:Object.fromEntries([480,768,1280,1920].map(w=>[w,`/media/home-${w}.webp`]))};
 const HOME_HERO_VIDEO = {poster:HOME_HERO_IMAGE,mobile:'/media/home-mobile.mp4',desktop:'/media/home-desktop.mp4'};
 const SUPABASE_ASSETS = {
   team: 'https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/work.jpg?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC93b3JrLmpwZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODg1NzExODEsImV4cCI6MTgyMDEwNzE4MX0.OL4bt1rqmJtExTE2W6cR_hyUZySiRsXZ8dQfQ1eFRFU',
-  featuredVideo: 'https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/videos/2026/PROMO%20DOCUMENTARY.mov?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJ2aWRlb3MvMjAyNi9QUk9NTyBET0NVTUVOVEFSWS5tb3YiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg4NTcxMjM3LCJleHAiOjE4MjAxMDcyMzd9.SJ9QZ48J950vZB8gMoMWYxE_VzNGMJ-c5wQY7ph76lg',
   corporate: 'https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/Corporate%20Event2.jpg?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9Db3Jwb3JhdGUgRXZlbnQyLmpwZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODg1NzE2MDQsImV4cCI6MTgyMDEwNzYwNH0.yPgEU5tltsHQ4TXrVobJA8Tb7X-tamhK7N1db_VtP_I',
   documentary: 'https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/docu.jpg?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9kb2N1LmpwZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODg1NzE2MjcsImV4cCI6MTgyMDEwNzYyN30.TElM8_WTcEgbYUxh-Fh8s8CVYH954JLssj9zZYMdjWE',
   liveEvent: 'https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/Live%20Ev.jpg?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9MaXZlIEV2LmpwZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODg1NzE2NDEsImV4cCI6MTgyMDEwNzY0MX0.TOHnf91x2dIX59EwUiQ_NSJYEWcxXkZ6U3qjHlakp_4',
@@ -52,12 +58,11 @@ const SUPABASE_ASSETS = {
   aboutHeroVideo: 'https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/videos/2026/FOKAL%20EVENT%20COVERAGE.mov?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJ2aWRlb3MvMjAyNi9GT0tBTCBFVkVOVCBDT1ZFUkFHRS5tb3YiLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg4NTg2MDQ2LCJleHAiOjE4MjAxMjIwNDZ9.KBgtYOXWdTjfDGzMRZUrmWrs4aXOtYtshO53woTTmSw',
 } as const;
 const HOME_TEAM_IMAGE = responsiveImage('home/team', SUPABASE_ASSETS.team, 1280, 900);
-const FEATURED_VIDEO = responsiveVideo('home/featured-documentary', SUPABASE_ASSETS.featuredVideo, HOME_HERO_IMAGE);
 const ABOUT_BTS_IMAGE = responsiveImage('about/behind-the-scenes', SUPABASE_ASSETS.aboutBts, 1280, 900);
 const services: [string, any, string, string[]][] = [
   ['Photography', Camera, 'Capturing moments that tell your story with clarity and impact.', ['/images/photo1.jpg']],
   ['Live Streaming', Radio, 'Professional live streaming solutions for events of any scale.', ['/images/LIV_1.jpg', '/images/live2.jpg', 'https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/Live%20Ev.jpg?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9MaXZlIEV2LmpwZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODg5NTIxODIsImV4cCI6MTgyMDQ4ODE4Mn0.dcerR3n-bErPM-r7df_cModdn_1sNBw5nCxXuUITlzQ']],
-  ['Events', CalendarDays, 'End-to-end event production and management.', ['https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/EVNT%202.jpeg?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9FVk5UIDIuanBlZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODg5NTE4MzgsImV4cCI6MTgyMDQ4NzgzOH0._HBlZAjovTJZkeib1pKh7i_HGJOMtbznNyVL0lOt7l8', 'https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/EVNT1.jpeg?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9FVk5UMS5qcGVnIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4ODk1MTg1MCwiZXhwIjoxODIwNDg3ODUwfQ.-w69gsXNMp-F4TBedLSLQuW2IICzzSHMer2ljYnK4Mw', 'https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/EVNT3.jpeg?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9FVk5UMy5qcGVnIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4ODk1MTg2MywiZXhwIjoxODIwNDg3ODYzfQ.Ro59TkRwaD8G8zpjrNgMAmQ8YqhWbUVUl5CKwXRzpOs', 'https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/evnt1.jpg?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9ldm50MS5qcGciLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg4OTUyMTEyLCJleHAiOjE4MjA0ODgxMTJ9.N1SpsIke59TW6QBK6EhDqElEiPG2FgkDNSESOVxuwsk', 'https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/evnt2.jpg?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9ldm50Mi5qcGciLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg4OTUyMTMxLCJleHAiOjE4MjA0ODgxMzF9.aKLRob7GEudhwxAgtHuts_c-Efiwpu85K3f7XLo3_pY', 'https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/evnt4.jpg?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9ldm50NC5qcGciLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg4OTUyMTUzLCJleHAiOjE4MjA0ODgxNTN9.utL-Oy4Hx39OFGPNzNc8uQ2hbTpl9XDfnDyRusRgAS8']],
+  ['Events', CalendarDays, 'End-to-end event production and management.', ['https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/EVNT%202.jpeg?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9FVk5UIDIuanBlZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODg5NTE4MzgsImV4cCI6MTgyMDQ4NzgzOH0._HBlZAjovTJZkeib1pKh7i_HGJOMtbznNyVL0lOt7l8', 'https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/EVNT1.jpeg?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9FVk5UMS5qcGVnIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4ODk1MTg1MCwiZXhwIjoxODIwNDg3ODUwfQ.-w69gsXNMp-F4TBedLSLQuW2IICzzSHMer2ljYnK4Mw', 'https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/EVNT3.jpeg?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9FVk5UMy5qcGVnIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4ODk1MTg2MywiZXhwIjoxODIwNDg3ODYzfQ.Ro59TkRwaD8G8zpjrNgMAmQ8YqhWbUVUl5CKwXRzpOs']],
   ['Marketing', Megaphone, 'Creative strategies that build brands and drive results.', [SUPABASE_ASSETS.brand, SUPABASE_ASSETS.corporate, SUPABASE_ASSETS.documentary, SUPABASE_ASSETS.liveEvent]],
   ['Branding', Award, 'Distinctive brand identities that make a lasting impression.', ['https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/Hi%20PNG%20LOGO.png?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9IaSBQTkcgTE9HTy5wbmciLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg4OTUwOTk3LCJleHAiOjE4MjA0ODY5OTd9._mopSOwhUx6GHw26Bcg5Vetk0QsIjd-eXUQS0WTpnaM', 'https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/Hi%20PNG%201.png?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9IaSBQTkcgMS5wbmciLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg4OTUxMDM2LCJleHAiOjE4MjA0ODcwMzZ9.ACmXI2HOuOLIEGNOmRd3hj1JMFlVZm2Q_10Ms8FCZUo', 'https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/HI%20PNG%20Concept.png?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9ISSBQTkcgQ29uY2VwdC5wbmciLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg4OTUxMDU0LCJleHAiOjE4MjA0ODcwNTR9.RDEWVgH0oDi57uxf4T837cjLXP7sBEkEm8jotFTuqE4']],
   ['Staging & AV', Lightbulb, 'Stage, lighting, sound and AV solutions for unforgettable events.', ['https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/STG1.jpg?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9TVEcxLmpwZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODg5NTIwNDAsImV4cCI6MTgyMDQ4ODA0MH0.Mo-sMrKyUiIYBY8nqnaLapkgOdPNrA_p3lQP_TbXoq8', 'https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/stg2.jpg?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9zdGcyLmpwZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODg5NTIwNTgsImV4cCI6MTgyMDQ4ODA1OH0.npymI9u6X81gryjY5ofG3kmQykE2HWqdXSvqxT6KUls', 'https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/stg3.jpg?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9zdGczLmpwZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODg5NTIwNzMsImV4cCI6MTgyMDQ4ODA3M30.EusymCJe59x5Bc-8HcBAPv3qnN4FR4cr4tkzm460vN4', 'https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/stg4.jpg?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9zdGc0LmpwZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODg5NTIwODYsImV4cCI6MTgyMDQ4ODA4Nn0.P-NMqHzEXr43SsMPDhKmjYQN6qE-tBriv9-Ooc5627s']],
@@ -197,34 +202,141 @@ function PageHero({eyebrow,title,copy,image=IMG.hero,videoSrc,animatedBackground
 }
 function CTA(){return <section className="strip-cta"><div><b>Let's Work Together</b><span>We'd love to hear about your next project.</span></div><Button>GET IN TOUCH</Button><a href="mailto:info@fokalltd.com" aria-label="Email Fokal Solutions"><Mail/> info@fokalltd.com</a></section>}
 
-export function HomePage(){
- return <><section className="home-hero"><BackgroundVideo asset={HOME_HERO_VIDEO} className="hero-video" priority/><div className="hero-copy"><small>// WELCOME TO FOKAL SOLUTIONS LIMITED</small><h1>DRIVEN BY CREATIVITY<br/>BACKED BY EXPERIENCE,<em>INSPIRED BY YOU.</em></h1><p>Media production, marketing and events that connect organisations with people and turn ambitious ideas into lasting impact.</p><div className="hero-actions"><Button to="/booking">GET A QUOTE</Button><Link className="outline-btn" to="/gallery">VIEW OUR WORK <ArrowRight/></Link></div></div><i/></section>
+export function HomePage() {
+  const [showreelOpen, setShowreelOpen] = useState(false);
+  const [showreelFailed, setShowreelFailed] = useState(false);
+  const clients = [...new Map(homeClients.map(client => [client.name, client])).values()];
 
- {/* Services first: help visitors identify the right path immediately. */}
- <section className="home-section service-ribbon-section"><div className="home-shell"><div className="section-head section-head-compact"><small>WHAT WE DO</small><h2>How can we help?</h2></div><div className="service-ribbon">{services.map(([name,Icon,copy])=><Link to="/services" key={name}><Icon/><b>{name}</b><span>{copy}</span><ArrowRight className="mini-arrow"/></Link>)}</div></div></section>
+  return <div className="cinematic-home">
+    <section className="home-hero">
+      <BackgroundVideo asset={HOME_HERO_VIDEO} className="hero-video" priority paused={showreelOpen}/>
+      <div className="hero-copy">
+        <h1>DRIVEN BY <strong>CREATIVITY</strong><br/>BACKED BY <strong>EXPERIENCE</strong>,<br/>INSPIRED BY <strong>YOU</strong>.</h1>
+        <p>Media production, marketing and events across Papua New Guinea.</p>
+        <div className="hero-actions">
+          <Dialog.Root open={showreelOpen} onOpenChange={open => {
+            setShowreelFailed(false);
+            setShowreelOpen(open);
+          }}>
+            <Dialog.Trigger className="blue-btn">Watch Showreel <Video size={18} aria-hidden="true"/></Dialog.Trigger>
+            <Dialog.Portal>
+              <Dialog.Overlay className="showreel-overlay"/>
+              <Dialog.Content className="showreel-dialog" aria-describedby={undefined}>
+                <div className="showreel-heading">
+                  <Dialog.Title>FOKAL Showreel</Dialog.Title>
+                  <Dialog.Close aria-label="Close showreel">&times;</Dialog.Close>
+                </div>
+                {showreelOpen && (showreelFailed ? (
+                  <p role="alert">The showreel couldn’t play. <a href={HERO_VIDEO_URL}>Open the video directly</a>.</p>
+                ) : (
+                  <video src={HERO_VIDEO_URL} poster={HOME_HERO_IMAGE.fallback} controls autoPlay playsInline preload="none"
+                    crossOrigin={SHOWREEL_CAPTIONS ? 'anonymous' : undefined} onError={() => setShowreelFailed(true)}>
+                    {SHOWREEL_CAPTIONS && <track kind="captions" src={SHOWREEL_CAPTIONS} srcLang="en" label="English" default/>}
+                  </video>
+                ))}
+                <details className="px-4 py-3 text-white">
+                  <summary>Read about the showreel</summary>
+                  <p className="mt-2">FOKAL’s production portfolio spans photography, video, live streaming and event coverage across Papua New Guinea. Explore the Our Work gallery for project descriptions and selected photos.</p>
+                  <Link className="underline" to="/gallery">Explore Our Work</Link>
+                  {SHOWREEL_TRANSCRIPT && <a className="ml-4 underline" href={SHOWREEL_TRANSCRIPT}>Read the showreel transcript</a>}
+                </details>
+              </Dialog.Content>
+            </Dialog.Portal>
+          </Dialog.Root>
+          <Link className="outline-btn" to="/gallery">View Our Work <ArrowRight size={17}/></Link>
+        </div>
+      </div>
+    </section>
 
- <section className="home-proof"><div className="home-shell"><Stats/></div></section>
+    <section className="home-section home-work" aria-labelledby="selected-work">
+      <div className="home-shell">
+        <div className="editorial-section-heading">
+          <h2 id="selected-work">Selected work</h2>
+          <Link className="editorial-text-link" to="/gallery">All projects <ArrowRight size={17}/></Link>
+        </div>
+        <div className="work-grid">
+          {projects.slice(0, 4).map((project, index) => {
+            const photography = index === 1;
+            const title = photography ? cupTitle : homeProjectUpdates[index]?.title ?? project.title;
+            const cover = photography ? cupPhotos[0].src : project.image;
+            const route = photography ? '/photography' : '/projects/' + projectSlugs[index];
+            const youtubeId = photography ? undefined : homeProjectUpdates[index]?.youtubeId ?? project.youtubeId;
+            return <article className="editorial-project" key={route}>
+              {youtubeId && <div className="inline-project-video">
+                <ClickToPlay title={title} youtubeId={youtubeId} poster={optimizedImage(cover).fallback} showTranscriptLink={false}/>
+              </div>}
+              <Link to={route}>
+                {!youtubeId && <ResponsiveImage asset={optimizedImage(cover)} alt="" sizes="(max-width: 600px) 100vw, 50vw"/>}
+                <div className="editorial-project-title">
+                  <div><small>{photography ? 'Photography' : project.category}</small><h3>{title}</h3></div>
+                  <ArrowRight size={20} aria-hidden="true"/>
+                </div>
+              </Link>
+            </article>;
+          })}
+        </div>
+      </div>
+    </section>
 
- <section className="home-intro"><div className="home-shell split-cards"><article><div><small>WHO WE ARE</small><h2>Creative Solutions.<br/>Delivered Professionally.</h2><p>Fokal Solutions Limited is a Papua New Guinea based production, marketing and events company. We combine creativity, technology and experience to deliver media and events that inspire.</p><Button to="/about">ABOUT US</Button></div><ResponsiveImage asset={HOME_TEAM_IMAGE} alt="Fokal team at work" sizes="(max-width: 900px) 100vw, 50vw"/></article><article><div><small>FEATURED WORK</small><h2>Showcasing stories.<br/>Creating impact.</h2><p>See some of our recent work across multiple industries and platforms.</p><Button to="/gallery">VIEW ALL WORK</Button></div><BackgroundVideo asset={FEATURED_VIDEO} className="video-tile" ariaLabel="Fokal promotional documentary"/></article></div></section>
+    <section className="home-section service-ribbon-section" aria-labelledby="home-services">
+      <div className="home-shell">
+        <div className="editorial-section-heading">
+          <h2 id="home-services">What we do</h2>
+          <Link className="editorial-text-link" to="/services">Explore services <ArrowRight size={17}/></Link>
+        </div>
+        <div className="service-ribbon">
+          {services.map(([name, Icon, copy]) => <article key={name}><Icon aria-hidden="true"/><h3>{name}</h3><p>{copy}</p></article>)}
+        </div>
+      </div>
+    </section>
 
- {/* About preview */}
- <section className="home-section about-preview"><div className="home-shell"><div className="about-grid"><div><small>ABOUT FOKAL SOLUTIONS</small><h2>Driven by Passion.<br/>Focused on Impact.</h2><p>Fokal Solutions Limited is a Papua New Guinea based production, marketing and events company. We are a team of creative professionals, storytellers, technicians and strategists who are passionate about delivering outstanding results.</p><p>Our mission is to connect brands with people through powerful content, meaningful experiences and innovative solutions.</p><Button to="/about#directors">MEET THE TEAM</Button></div><img loading="lazy" decoding="async" src={optimizedImage(IMG.about).fallback} alt="Behind the scenes at Fokal Solutions"/></div>
- <div className="values"><small>OUR VALUES</small>{[[Star,'Excellence','We deliver work that exceeds expectations.'],[Users,'Commitment','We are dedicated to our clients vision.'],[ShieldCheck,'Integrity','We build trust through honest practices.'],[Heart,'Impact','We create content that resonates.']].map(([Icon,t,d]:any)=><div key={t}><Icon/><b>{t}</b><span>{d}</span></div>)}</div></div></section>
+    <section className="home-section home-proof" aria-labelledby="home-clients">
+      <div className="home-shell">
+        <div className="editorial-section-heading"><h2 id="home-clients">Our clients</h2></div>
+        <div className="client-logo-strip">
+          <svg className="client-logo-filters" aria-hidden="true" width="0" height="0">
+            <filter id="client-logo-remove-white" colorInterpolationFilters="sRGB">
+              <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -.2126 -.7152 -.0722 0 1"/>
+              <feComponentTransfer><feFuncA type="linear" slope="12" intercept="-.24"/></feComponentTransfer>
+              <feComposite in="SourceGraphic" operator="in"/>
+            </filter>
+          </svg>
+          <div className="client-logo-track">
+            {[false, true].map(copy => (
+              <ul key={String(copy)} className="editorial-clients" aria-hidden={copy || undefined}>
+                {clients.map(client => (
+                  <li key={client.name}>
+                    <ResponsiveImage
+                      asset={optimizedImage(client.image)}
+                      alt={copy ? '' : client.name}
+                      sizes="200px"
+                      className={client.name === 'BSP' || client.name === 'SLMP' ? undefined : 'client-logo-transparent'}
+                    />
+                  </li>
+                ))}
+              </ul>
+            ))}
+          </div>
+        </div>
+        <Stats/>
+      </div>
+    </section>
 
- {/* Gallery preview */}
- <section className="home-section home-work"><div className="home-shell"><div className="section-head"><small>OUR WORK</small><h2>Projects that speak for themselves.</h2><p>We partner with organisations across Papua New Guinea and beyond to create powerful content and memorable experiences.</p></div><div className="work-grid">{projects.slice(0,4).map((p,i)=>{
- const update=homeProjectUpdates[i];
- const title=i===1?cupTitle:update?.title ?? p.title;
- const intro=i===1?cupIntro:['A documentary following Eda Davara Marine Sanctuary and the Eco Rangers’ conservation work in Barakau.','','Practical cocoa fertiliser training with Governor Allan Bird, supporting healthy trees and stronger farming communities.','Highlights from the 2025 Bougainville Chocolate Festival, celebrating cocoa, culture and community in Buka.'][i];
- return <article className="home-project-card" key={p.title}>
-  {i===1?<CommandersCup/>:update ? <ClickToPlay youtubeId={update.youtubeId} title={title}/> : <img loading="lazy" decoding="async" src={optimizedImage(p.image).fallback} alt={title}/>}
-  <div><small>{i===1?'Photography':p.category}</small><h3>{title}</h3><p className="home-project-description">{intro}</p><Link className="home-project-link" to={i===1?'/photography':`/projects/${projectSlugs[i]}`} aria-label={`View ${title}`}><b>VIEW PROJECT <ArrowRight/></b></Link></div>
- </article>;
-})}</div><div className="section-link-row"><Button to="/gallery">SEE OUR WORK</Button></div></div></section>
-
- {/* Clients preview */}
-
- <CTA/></>;
+    <section className="home-section studio-intro" aria-labelledby="home-studio">
+      <div className="home-shell">
+        <ResponsiveImage asset={HOME_TEAM_IMAGE} alt="Fokal team at work" sizes="(max-width: 760px) 100vw, 50vw"/>
+        <div>
+          <h2 id="home-studio">A creative studio based in Papua New Guinea</h2>
+          <p>Fokal Solutions Limited is a Papua New Guinea based production, marketing and events company. Our team of storytellers, technicians and strategists connects brands with people through powerful content and meaningful experiences.</p>
+          <Link className="editorial-text-link" to="/about#directors">Meet the team <ArrowRight size={17}/></Link>
+        </div>
+      </div>
+    </section>
+    <section className="strip-cta">
+      <div><h2>Let’s work together</h2><p>Tell us about your next project.</p></div>
+      <Button to="/booking">Get a Quote</Button>
+    </section>
+  </div>;
 }
 
 export function AboutPage(){
@@ -260,7 +372,7 @@ function ServiceThumbnail({images,alt}:{images:string[],alt:string}){
  const [hasInteracted,setHasInteracted]=useState(false);
  useEffect(()=>{if(!hasInteracted || images.length<2)return;const t=setInterval(()=>setIdx(i=>(i+1)%images.length),3500);return()=>clearInterval(t);},[hasInteracted,images.length]);
  const selectImage=(next:number)=>{setHasInteracted(true);setIdx(next);};
- return <div className="service-thumb-wrap">{images.slice(0,hasInteracted?images.length:1).map((src,i)=><ResponsiveImage key={src} asset={responsiveImage(`services/${alt.toLowerCase().replace(/[^a-z0-9]+/g,'-')}-${i+1}`,src,960,640)} alt={alt} sizes="(max-width: 900px) 100vw, 45vw" className={i===idx?'active':''}/>) }<div className="service-thumb-dots">{images.map((_,i)=><button key={i} className={i===idx?'active':''} onClick={e=>{e.stopPropagation();selectImage(i);}} aria-label={`Show image ${i+1}`}/>)}</div></div>;
+ return <div className="service-thumb-wrap">{images.slice(0,hasInteracted?images.length:1).map((src,i)=><ResponsiveImage key={src} asset={optimizedImage(src)} alt={alt} sizes="(max-width: 900px) 100vw, 45vw" className={i===idx?'active':''}/>) }<div className="service-thumb-dots">{images.map((_,i)=><button key={i} className={i===idx?'active':''} onClick={e=>{e.stopPropagation();selectImage(i);}} aria-label={`Show image ${i+1}`}/>)}</div></div>;
 }
 const photographyShowcase = [
   {
@@ -284,27 +396,197 @@ type Service = (typeof services)[number];
 function ServiceModal({service,onClose}:{service:Service,onClose:()=>void}){
  const [name,Icon,copy,images]=service;
  const [slide,setSlide]=useState(0);
- const matching=projects.filter(project=>project.category===name);
- const showcase: {title:string;image:string;description?:string}[]=name==='Live Streaming'?[{title:'Corporate Live Stream',image:'/media/ibbm-corporate-live-stream.webp',description:'Corporate event live streaming with multi-camera production, live switching and clear audio, connecting the audience in the room with viewers online.'}]:name==='Photography'?photographyShowcase:matching.length?matching.slice(0,4):images.map((image,index)=>({title:`${name} project ${index+1}`,image,client:'Fokal Solutions client'}));
+ const showcase: {title:string;image:string;description?:string}[]=name==='Live Streaming'?[{title:'Corporate Live Stream',image:'/media/ibbm-corporate-live-stream.webp',description:'Corporate event live streaming with multi-camera production, live switching and clear audio, connecting the audience in the room with viewers online.'}]:name==='Photography'?photographyShowcase:images.map((image,index)=>({title:`${name} project ${index+1}`,image}));
  useEffect(()=>{setSlide(0);const timer=showcase.length>1?setInterval(()=>setSlide(current=>(current+1)%showcase.length),4000):undefined;const onKey=(event:KeyboardEvent)=>event.key==='Escape'&&onClose();document.body.style.overflow='hidden';window.addEventListener('keydown',onKey);return()=>{if(timer)clearInterval(timer);document.body.style.overflow='';window.removeEventListener('keydown',onKey);};},[name,showcase.length,onClose]);
  const active=showcase[slide];
- return <div className="service-modal-overlay" onClick={onClose} role="presentation"><section className="service-modal" role="dialog" aria-modal="true" aria-labelledby="service-modal-title" onClick={event=>event.stopPropagation()}><button className="service-modal-close" onClick={onClose} aria-label="Close service details"><X/></button><div className="service-modal-showcase"><img loading="lazy" decoding="async" src={optimizedImage(active.image).fallback} alt={active.title}/><div className="service-slide-copy"><small>PREVIOUS PROJECT</small><strong>{active.title}</strong>{active.description&&<p>{active.description}</p>}</div>{showcase.length>1&&<><button className="service-slide-arrow previous" onClick={()=>setSlide(current=>(current-1+showcase.length)%showcase.length)} aria-label="Previous project"><ChevronLeft/></button><button className="service-slide-arrow next" onClick={()=>setSlide(current=>(current+1)%showcase.length)} aria-label="Next project"><ChevronRight/></button><div className="service-slide-dots">{showcase.map((item,index)=><button key={item.title} className={index===slide?'active':''} onClick={()=>setSlide(index)} aria-label={`Show project ${index+1}`}/>)}</div></>}</div><div className="service-modal-content"><div className="service-modal-heading"><Icon/><div><small>OUR SERVICE</small><h2 id="service-modal-title">{name}</h2><p>{copy}</p></div></div><p className="service-modal-overview">{serviceDetails[name].overview}</p><h3>What we deliver</h3><div className="service-deliverables">{serviceDetails[name].deliverables.map(item=><span key={item}><Check/> {item}</span>)}</div><Button to="/contact">DISCUSS YOUR PROJECT</Button></div></section></div>;
+ return <div className="service-modal-overlay" onClick={onClose} role="presentation"><section className="service-modal" role="dialog" aria-modal="true" aria-labelledby="service-modal-title" onClick={event=>event.stopPropagation()}><button className="service-modal-close" onClick={onClose} aria-label="Close service details"><X/></button><div className="service-modal-showcase"><ResponsiveImage asset={optimizedImage(active.image)} alt={active.title} sizes="(max-width: 760px) 100vw, 510px" priority/><div className="service-slide-copy"><small>PREVIOUS PROJECT</small><strong>{active.title}</strong>{active.description&&<p>{active.description}</p>}</div>{showcase.length>1&&<><button className="service-slide-arrow previous" onClick={()=>setSlide(current=>(current-1+showcase.length)%showcase.length)} aria-label="Previous project"><ChevronLeft/></button><button className="service-slide-arrow next" onClick={()=>setSlide(current=>(current+1)%showcase.length)} aria-label="Next project"><ChevronRight/></button><div className="service-slide-dots">{showcase.map((item,index)=><button key={item.title} className={index===slide?'active':''} onClick={()=>setSlide(index)} aria-label={`Show project ${index+1}`}/>)}</div></>}</div><div className="service-modal-content"><div className="service-modal-heading"><Icon/><div><small>OUR SERVICE</small><h2 id="service-modal-title">{name}</h2><p>{copy}</p></div></div><p className="service-modal-overview">{serviceDetails[name].overview}</p><h3>What we deliver</h3><div className="service-deliverables">{serviceDetails[name].deliverables.map(item=><span key={item}><Check/> {item}</span>)}</div><Button to="/contact">DISCUSS YOUR PROJECT</Button></div></section></div>;
 }
 export function ServicesPage(){const [selectedService,setSelectedService]=useState<Service|null>(null);return <><PageHero eyebrow="OUR SERVICES" title={<>Solutions that bring<br/>your vision to life.</>} copy="A full range of media production, marketing and events solutions tailored to exceed your expectations." image="https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/Wide%20services.jpg?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9XaWRlIHNlcnZpY2VzLmpwZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODg2MDAwNzAsImV4cCI6MTgyMDEzNjA3MH0.Au76AQFXKFv-bZcFVfGMzkwHV6Z2H_NLZTIM2XfuBmU" animatedBackground/><main className="light-page"><section className="services-intro"><p>Fokal Solutions Limited delivers end-to-end creative and strategic services that empower brands, organisations, and communities to communicate effectively and make a meaningful impact. Our work spans media production, marketing, research, and live event execution, offering clients a one-stop partner for visual storytelling, audience engagement, insight-driven strategy, and memorable experiences. Every service we provide is tailored to our clients' goals, ensuring purposeful, professional, and grounded outcomes.</p></section><section className="service-grid">{services.map((service)=>{const [name,Icon,copy,imgs]=service;return <article className="service-card-interactive" key={name} role="button" tabIndex={0} aria-label={`View ${name} service details`} onClick={()=>setSelectedService(service)} onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();setSelectedService(service);}}}><div className="service-card-text"><Icon/><h3>{name}</h3><p>{copy}</p>{['Creative strategy','Professional production','Experienced team','Reliable delivery'].map(x=><span key={x}><Check/> {x}</span>)}<b className="service-card-action">EXPLORE SERVICE <ArrowRight/></b></div><ServiceThumbnail images={imgs} alt={name}/></article>;})}</section><section className="process"><div><small>OUR PROCESS</small><h2>From Concept<br/>to Completion.</h2></div>{['Discover','Plan','Create','Deliver','Measure'].map((x,i)=><div key={x}><b>0{i+1}</b><strong>{x}</strong><span>Focused work that moves your vision forward.</span></div>)}</section></main><CTA/>{selectedService&&<ServiceModal service={selectedService} onClose={()=>setSelectedService(null)}/>}</>}
 
-export function GalleryPage(){
- const filters=['All','Video Production','Photography','Live Streaming','Events','Marketing','Staging & AV'];
- const [activeFilter,setActiveFilter]=useState('All');
- const [activeStatus,setStatus]=useState<'All'|'Completed'|'In Progress'|'Planning'>('All');
- const [selected,setSelected]=useState<Project|null>(null);
- const statusFilters: Array<'All'|'Completed'|'In Progress'|'Planning'>=['All','Completed','In Progress','Planning'];
- const galleryProjects=projects.slice(0,6);
- let visibleProjects=activeFilter==='All'?galleryProjects:galleryProjects.filter(p=>p.category===activeFilter);
- visibleProjects=activeStatus==='All'?visibleProjects:visibleProjects.filter(p=>p.status===activeStatus);
- const statusColor=(s:string)=>s==='Completed'?'st-complete':s==='In Progress'?'st-progress':'st-plan';
- return <><PageHero eyebrow="OUR WORK" title={<>Projects that speak<br/>for <em>themselves.</em></>} copy="We partner with organisations across Papua New Guinea and beyond to create powerful content and memorable experiences." image={IMG.gallery}/><main className="light-page"><div className="filter-bar"><div className="filters"><span className="filter-label">Category:</span>{filters.map(filter=><button key={filter} className={activeFilter===filter?'active':''} aria-pressed={activeFilter===filter} onClick={()=>setActiveFilter(filter)}>{filter}</button>)}</div><div className="filters status-filters"><span className="filter-label">Status:</span>{statusFilters.map(s=><button key={s} className={activeStatus===s?'active status-btn':'status-btn'} aria-pressed={activeStatus===s} onClick={()=>setStatus(s)}>{s}</button>)}</div></div><p className="result-count">Showing {visibleProjects.length} project{visibleProjects.length!==1?'s':''}</p><section className="work-grid work-grid-detail">{visibleProjects.map(p=><article key={p.title} className="project-card" onClick={()=>setSelected(p)}><div className="project-img-wrap" onClick={p.youtubeId||p.facebookUrl?e=>e.stopPropagation():undefined}>{p.youtubeId?<ProjectVideo id={p.youtubeId} title={p.title}/>:p.facebookUrl?<FacebookProjectVideo url={p.facebookUrl} title={p.title}/>:<img loading="lazy" decoding="async" src={optimizedImage(p.image).fallback} alt={p.title}/>}<span className={`project-status ${statusColor(p.status)}`}>{p.status}</span></div><div className="project-body"><h3>{p.title}</h3><small>{p.category}</small><div className="project-meta"><span><CalendarDays size={12}/> {p.date}</span><span><Users size={12}/> {p.client}</span>{p.location&&<span><MapPin size={12}/> {p.location}</span>}</div><div className="project-progress"><div className="progress-track"><div className="progress-fill" style={{width:`${p.progress}%`}}/></div><b>{p.progress}%</b></div>{p.commissionedBy&&<p>C/: {p.commissionedBy}</p>}{p.role&&<p><b>Role:</b> {p.role}</p>}<p>{p.description}</p></div></article>)}</section>
- {selected && <div className="project-modal-overlay" onClick={()=>setSelected(null)}><div className="project-modal" onClick={e=>e.stopPropagation()}><button className="modal-close" onClick={()=>setSelected(null)}>&times;</button>{selected.youtubeId?<ProjectVideo id={selected.youtubeId} title={selected.title}/> :selected.facebookUrl?<FacebookProjectVideo url={selected.facebookUrl} title={selected.title}/>:<img loading="lazy" decoding="async" src={optimizedImage(selected.image).fallback} alt={selected.title}/>}<div className="modal-body"><span className={`project-status ${statusColor(selected.status)}`}>{selected.status}</span><h2>{selected.title}</h2><small>{selected.category}</small>{selected.commissionedBy&&<p>C/: {selected.commissionedBy}</p>}{selected.role&&<p><b>Role:</b> {selected.role}</p>}<p>{selected.description}</p><div className="modal-meta"><div><CalendarDays/><b>Date</b><span>{selected.date}</span></div><div><Users/><b>Client</b><span>{selected.client}</span></div>{selected.location&&<div><MapPin/><b>Location</b><span>{selected.location}</span></div>}<div><Target/><b>Progress</b><span>{selected.progress}%</span></div></div><div className="modal-progress"><div className="progress-track"><div className="progress-fill" style={{width:`${selected.progress}%`}}/></div><b>{selected.progress}% complete</b></div></div></div></div>}
- <Stats/></main><CTA/></>}
+type WorkCard = Project & {
+  key: number;
+  link?: string | null;
+  photos: { url: string; caption: string }[];
+  videoAttachments?: { url: string; caption: string }[];
+};
+
+const workFilters = ['Video Production', 'Photography', 'Live Streaming', 'Events', 'Marketing', 'Staging & AV'];
+const localWork: WorkCard[] = projects.slice(0, 6).map((project, index) => ({
+  ...project,
+  key: index + 1,
+  link: projectSlugs[index] ? '/projects/' + projectSlugs[index] : index === 4 ? '/photography' : null,
+  photos: index === 4 ? cupPhotos.map(photo => ({ url: photo.src, caption: photo.alt })) : [],
+}));
+
+function WorkCover({ project }: { project: WorkCard }) {
+  if (project.youtubeId) return <ProjectVideo id={project.youtubeId} title={project.title}/>;
+  if (project.facebookUrl) return <FacebookProjectVideo url={project.facebookUrl} title={project.title}/>;
+  return <img loading="lazy" decoding="async" src={project.image ? optimizedImage(project.image).fallback : IMG.gallery} alt={project.title}/>;
+}
+
+const GALLERY_BATCH_SIZE = 6;
+
+export function GalleryPage() {
+  const { projectId } = useParams();
+  const navigate = useNavigate();
+  const categories = useGalleryCategories();
+  const gallery = useGalleryProjects('public');
+  const [activeFilter, setActiveFilter] = useState('All');
+  const [activeStatus, setStatus] = useState<'All' | ProjectStatus>('All');
+  const [search, setSearch] = useState('');
+  const [displayLimit, setDisplayLimit] = useState(GALLERY_BATCH_SIZE);
+  const [selectedKey, setSelectedKey] = useState<number | null>(null);
+  const projectTrigger = useRef<HTMLButtonElement | null>(null);
+  const nextProjectToFocus = useRef<number | null>(null);
+  const categoryNames = new Map(categories.data?.map(category => [category.id, category.name]));
+  const galleryProjects: WorkCard[] = isSupabaseConfigured ? (gallery.data ?? []).map(project => {
+    const media = project.media.map(asset => ({ ...asset, url: gallery.imageUrl(asset.url) })).filter(asset => asset.url);
+    return {
+      key: project.id, title: project.title, category: categoryNames.get(project.category_id ?? '') ?? '',
+      date: project.year, client: project.client, description: project.description, image: gallery.imageUrl(project.image_url),
+      status: project.status, progress: project.progress, location: project.location,
+      role: project.production_role, commissionedBy: project.commissioned_by, ...galleryVideo(project.video_url),
+      link: project.project_link, photos: media.filter(asset => asset.type === 'image'),
+      videoAttachments: media.filter(asset => asset.type === 'video'),
+    };
+  }) : localWork;
+  const filters = ['All', ...new Set([...workFilters, ...galleryProjects.map(project => project.category).filter(Boolean)])];
+  const statusFilters = ['All', ...projectStatuses] as const;
+  const searchTerms = search.toLocaleLowerCase().trim().split(/\s+/).filter(Boolean);
+  const matchingProjects = galleryProjects.filter(project =>
+    (activeFilter === 'All' || project.category === activeFilter) &&
+    (activeStatus === 'All' || project.status === activeStatus) &&
+    searchTerms.every(term => [project.title, project.client, project.location].join(' ').toLocaleLowerCase().includes(term))
+  );
+  const visibleProjects = matchingProjects.slice(0, displayLimit);
+  const hasMoreProjects = matchingProjects.length > visibleProjects.length;
+  const directProjectKey = projectId && /^[1-9]\d*$/.test(projectId) ? Number(projectId) : null;
+  const selected = galleryProjects.find(project => project.key === (projectId ? directProjectKey : selectedKey));
+  const loading = isSupabaseConfigured && (gallery.isLoading || categories.isLoading);
+  const failed = isSupabaseConfigured && (gallery.isError || categories.isError);
+  const statusColor = (status: string) => status === 'Completed' ? 'st-complete' : status === 'In Progress' ? 'st-progress' : 'st-plan';
+
+  return <>
+    {projectId && <Helmet defer={false}>
+      <title>{selected ? selected.title + ' | Fokal Solutions' : 'Our Work | Fokal Solutions'}</title>
+      {selected && <meta name="description" content={selected.description}/>}
+    </Helmet>}
+    <PageHero eyebrow="OUR WORK" title={<>Projects that speak<br/>for <em>themselves.</em></>} copy="We partner with organisations across Papua New Guinea and beyond to create powerful content and memorable experiences." image={IMG.gallery}/>
+    <main className="light-page">
+      <div className="filter-bar">
+        <label className="w-full max-w-lg text-sm font-semibold">
+          Search projects
+          <input className="mt-2 w-full rounded-md border border-slate-300 bg-white px-4 py-3 font-normal text-slate-900"
+            type="search" value={search} placeholder="Project, client or location"
+            onChange={event => { setSearch(event.target.value); setDisplayLimit(GALLERY_BATCH_SIZE); }}/>
+        </label>
+        <div className="filters"><span className="filter-label">Category</span>{filters.map(filter =>
+          <button key={filter} className={activeFilter === filter ? 'active' : ''} aria-pressed={activeFilter === filter} onClick={() => {
+            setActiveFilter(filter);
+            setDisplayLimit(GALLERY_BATCH_SIZE);
+          }}>{filter}</button>
+        )}</div>
+        <div className="filters status-filters"><span className="filter-label">Status</span>{statusFilters.map(status =>
+          <button key={status} className={activeStatus === status ? 'active status-btn' : 'status-btn'} aria-pressed={activeStatus === status} onClick={() => {
+            setStatus(status);
+            setDisplayLimit(GALLERY_BATCH_SIZE);
+          }}>{status}</button>
+        )}</div>
+      </div>
+      {failed ? <p className="result-count" role="alert">Could not load projects. <button className="underline" onClick={() => { gallery.retry(); void categories.refetch(); }}>Try again</button></p>
+        : loading ? <p className="result-count" role="status">Loading projects…</p>
+        : !visibleProjects.length ? <p className="result-count" role="status">No projects match these filters.</p>
+        : <p className="result-count" role="status">Showing {visibleProjects.length} of {matchingProjects.length} {matchingProjects.length === 1 ? 'project' : 'projects'}</p>}
+      {projectId && !loading && !failed && !selected &&
+        <p role="status">This project is unavailable. <Link className="underline" to="/gallery">Browse Our Work</Link></p>}
+      <Dialog.Root open={Boolean(selected) && !loading && !failed} onOpenChange={open => {
+        if (open) return;
+        if (projectId) navigate('/gallery', { replace: true });
+        else setSelectedKey(null);
+      }}>
+        {!loading && !failed && <section className="work-grid work-grid-detail">{visibleProjects.map(project =>
+          <article key={project.key} className={project.youtubeId || project.facebookUrl ? 'project-card project-card-with-video' : 'project-card'}>
+            <div className="project-img-wrap">
+              {project.youtubeId || project.facebookUrl
+                ? <div className="inline-project-video">
+                  <ClickToPlay key={project.youtubeId || project.facebookUrl} title={project.title}
+                    youtubeId={project.youtubeId} facebookUrl={project.facebookUrl}
+                    poster={project.image ? optimizedImage(project.image).fallback : undefined}/>
+                </div>
+                : <ResponsiveImage asset={optimizedImage(project.image || IMG.gallery)} alt="" sizes="(max-width: 600px) 100vw, (max-width: 960px) 50vw, 33vw"/>}
+              <span className={'project-status ' + statusColor(project.status)}>{project.status}</span>
+            </div>
+            <div className="project-body">
+              <small>{project.category}</small>
+              <h3><button type="button" aria-haspopup="dialog" ref={element => {
+                if (element && nextProjectToFocus.current === project.key) {
+                  nextProjectToFocus.current = null;
+                  element.focus({ preventScroll: true });
+                }
+              }} onClick={event => {
+                projectTrigger.current = event.currentTarget;
+                setSelectedKey(project.key);
+              }}>{project.title}<ArrowRight size={19} aria-hidden="true"/></button></h3>
+              {project.client && <p>{project.client}</p>}
+            </div>
+          </article>
+        )}</section>}
+        {!loading && !failed && hasMoreProjects && (
+          <div className="mt-8 flex justify-center">
+            <button type="button" className="blue-btn" onClick={event => {
+              if (event.detail === 0 || matchingProjects.length <= displayLimit + GALLERY_BATCH_SIZE) {
+                nextProjectToFocus.current = matchingProjects[displayLimit].key;
+              }
+              setDisplayLimit(limit => limit + GALLERY_BATCH_SIZE);
+            }}>Load more projects</button>
+          </div>
+        )}
+        {selected && <Dialog.Portal>
+          <Dialog.Overlay className="project-modal-overlay">
+            <Dialog.Content className="project-modal" onCloseAutoFocus={event => {
+              event.preventDefault();
+              projectTrigger.current?.focus();
+            }}>
+              <Dialog.Close className="modal-close" aria-label="Close project">&times;</Dialog.Close>
+              <WorkCover project={selected}/>
+              <div className="modal-body">
+                <span className={'project-status ' + statusColor(selected.status)}>{selected.status}</span>
+                <Dialog.Title>{selected.title}</Dialog.Title>
+                <small>{selected.category}</small>
+                {selected.commissionedBy && <p>C/: {selected.commissionedBy}</p>}
+                {selected.role && <p><b>Role:</b> {selected.role}</p>}
+                <Dialog.Description>{selected.description}</Dialog.Description>
+                <div className="modal-meta">
+                  {selected.date && <div><CalendarDays/><b>Date</b><span>{selected.date}</span></div>}
+                  {selected.client && <div><Users/><b>Client</b><span>{selected.client}</span></div>}
+                  {selected.location && <div><MapPin/><b>Location</b><span>{selected.location}</span></div>}
+                  <div><Target/><b>Progress</b><span>{selected.progress}%</span></div>
+                </div>
+                <div className="modal-progress"><div className="progress-track"><div className="progress-fill" style={{ width: selected.progress + '%' }}/></div><b>{selected.progress}% complete</b></div>
+                <div className="mt-4 flex flex-wrap gap-4">
+                  {!projectId && <Link className="underline" to={'/work/' + selected.key}>Open shareable project page</Link>}
+                  {selected.link && <Link className="underline" to={selected.link}>View full project</Link>}
+                </div>
+                {!!selected.photos.length && <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                  {selected.photos.map((photo, index) => <figure key={photo.url + ':' + index}>
+                    <img loading="lazy" src={photo.url} alt={photo.caption || selected.title} className="!h-auto !rounded"/>
+                    {photo.caption && <figcaption className="mt-1 text-sm">{photo.caption}</figcaption>}
+                  </figure>)}
+                </div>}
+                {selected.videoAttachments?.map((video, index) => <figure key={video.url + ':' + index} className="mt-4">
+                  <video controls preload="metadata" src={video.url} className="w-full" />
+                  {video.caption && <figcaption>{video.caption}</figcaption>}
+                </figure>)}
+              </div>
+            </Dialog.Content>
+          </Dialog.Overlay>
+        </Dialog.Portal>}
+      </Dialog.Root>
+      <Stats/>
+    </main>
+    <CTA/>
+  </>;
+}
 const clientNames=['KUMUL CONSOLIDATED HOLDINGS','PNG POWER','HIDES','NEWCREST','ExxonMobil','Santos','Air Niugini','Westpac','Digicel','BSP','UNDP','THE WORLD BANK','Australian Aid','JICA','Save the Children','care'];
 const clientLogoUrls=['https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/CLIENTEL/WARTSILLA.jpg?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9DTElFTlRFTC9XQVJUU0lMTEEuanBnIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4ODU5MDAwMCwiZXhwIjoxODIwMTI2MDAwfQ.o7jjNGAbPqynPvoNM-NIidlFlk-LK9rGFb0chMNXiFI','https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/CLIENTEL/UNFPA.png?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9DTElFTlRFTC9VTkZQQS5wbmciLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg4NTkwMTMzLCJleHAiOjE4MjAxMjYxMzN9.jMs3M5Qm97LnlVZGsWON9SQ4orXwWZUvXBRNoEEuX-w','https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/CLIENTEL/TWM-Group.png?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9DTElFTlRFTC9UV00tR3JvdXAucG5nIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4ODU5MDE1MywiZXhwIjoxODIwMTI2MTUzfQ.NrEC8E3b_3GxLvbXYnV-1GfhK0eRD9AIWCzcyZvq_3k','https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/CLIENTEL/BCFW.jpg?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9DTElFTlRFTC9CQ0ZXLmpwZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODU5MDE3NCwiZXhwIjoxODIwMTI2MTc0fQ.gzp0fvowJG7XRyyWmvAQyzBN3yJtWarV-icie-6YqK0','https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/CLIENTEL/NUI%20POWER.jpg?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9DTElFTlRFTC9OVUkgUE9XRVIuanBnIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4ODU5MDE5NSwiZXhwIjoxODIwMTI2MTk1fQ.eCg0eELJNr-s5QCi-dDLZSMK-81ZCDZEo0dUvt6SHyw','https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/CLIENTEL/SJA.jpg?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9DTElFTlRFTC9TSkEuanBnIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4ODU5MDIxMCwiZXhwIjoxODIwMTI2MjEwfQ._15hvz3WDMs2YxRHq75ab7BHP0D1v-a-MppYDPMrAEE','https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/CLIENTEL/CSL.jpg?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9DTElFTlRFTC9DU0wuanBnIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4ODU5MDIzMSwiZXhwIjoxODIwMTI2MjMxfQ._PhfUdddGcoS8UzgZP_ttlMPohEbGQzW_q0G0y2IrNE','https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/CLIENTEL/PNG%20AUS.jpg?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9DTElFTlRFTC9QTkcgQVVTLmpwZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODU5MDI1MSwiZXhwIjoxODIwMTI2MjUxfQ.MPLWZPC77iMbSrB9YbkQzRrXwLIYP2s2kq5cbhBm2v0','https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/CLIENTEL/PNG%20AUS.jpg?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9DTElFTlRFTC9QTkcgQVVTLmpwZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODU5MDI4MiwiZXhwIjoxODIwMTI2MjgyfQ.nEYGEeFODV3VQPk6SObv5xoOkc7Iafhabs93-hFmcyM'];
 
@@ -358,7 +640,67 @@ export function ContactPage(){
 
   <section className="contact-extra"><div className="contact-extra-head"><small>FAQ</small><h2>Frequently asked questions.</h2><p>Got a question? Chances are we've answered it before. If not, send us a message and we'll get back to you.</p></div><div className="faq-list">{faqs.map(([q,a],i)=><div key={i} className={`faq-item ${faqOpen===i?'open':''}`}><button onClick={()=>setFaqOpen(faqOpen===i?null:i)}><b>{q}</b><ChevronDown className="faq-chevron"/></button>{faqOpen===i&&<p>{a}</p>}</div>)}</div></section>
  </main></>}
-const orgTypes=['Government','NGO','Private Sector','Community Organisation','Educational Institution','Religious Organisation','Other'];const serviceGroups:[string,string[]][]=[['1. Media Production',['Photography','Videography','Content Development','Post-Production (Editing, Motion Graphics, Colour Grading)']],['2. Marketing & Communications',['Brand Strategy','Campaign Planning & Execution','Social Media Management','Content Writing & Copywriting','Digital Marketing & Analytics']],['3. Live Events Planning & Management',['Event Planning & Management','Event Live-Streaming','AV & Technical Support','Stage Design & Show-running','On-site Photography & Video Coverage']],['4. Research & Insights',['Market Research & Analysis','Focus Groups & Community Consultations','Surveys & Data Analysis','Report Writing & Visualisation']]];function ContactForm(){return <form className="fokal-form" onSubmit={e=>e.preventDefault()}><small>SEND US A MESSAGE</small><div className="two-col"><input placeholder="Your Name *"/><input type="email" placeholder="Email Address *"/><input placeholder="Phone Number"/><select defaultValue=""><option value="" disabled>Organisation Type</option>{orgTypes.map(x=><option key={x}>{x}</option>)}</select></div><select defaultValue=""><option value="" disabled>Select a Service</option>{serviceGroups.map(([group,subs])=><optgroup key={group} label={group}>{subs.map(s=><option key={s} value={`${group} — ${s}`}>{s}</option>)}</optgroup>)}</select><textarea placeholder="Your Message *" rows={7}/><label><input type="checkbox"/> I agree to the privacy policy and terms of service.</label><button className="blue-btn">SEND MESSAGE <ArrowRight/></button></form>}
+const orgTypes=['Government','NGO','Private Sector','Community Organisation','Educational Institution','Religious Organisation','Other'];const serviceGroups:[string,string[]][]=[['1. Media Production',['Photography','Videography','Content Development','Post-Production (Editing, Motion Graphics, Colour Grading)']],['2. Marketing & Communications',['Brand Strategy','Campaign Planning & Execution','Social Media Management','Content Writing & Copywriting','Digital Marketing & Analytics']],['3. Live Events Planning & Management',['Event Planning & Management','Event Live-Streaming','AV & Technical Support','Stage Design & Show-running','On-site Photography & Video Coverage']],['4. Research & Insights',['Market Research & Analysis','Focus Groups & Community Consultations','Surveys & Data Analysis','Report Writing & Visualisation']]];
+async function postNetlifyForm(data: FormData) {
+  const body = new URLSearchParams();
+  data.forEach((value, key) => body.append(key, String(value)));
+  const response = await fetch('/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
+  });
+  if (!response.ok) throw new Error('Submission failed');
+}
+
+function ContactForm() {
+  const [sending, setSending] = useState(false);
+  const [status, setStatus] = useState('');
+  async function submitContact(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (['localhost', '127.0.0.1'].includes(window.location.hostname)) {
+      setStatus('This is a local preview. Please send your message on the live website.');
+      return;
+    }
+
+    const form = event.currentTarget;
+    setSending(true);
+    setStatus('');
+    try {
+      await postNetlifyForm(new FormData(form));
+      form.reset();
+      setStatus('Thank you. Your message has been sent.');
+    } catch {
+      setStatus('Your message could not be sent. Please try again or email info@fokalltd.com.');
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return <form name="contact" method="POST" className="fokal-form" onSubmit={submitContact}>
+    <input type="hidden" name="form-name" value="contact" />
+    <p hidden><label>Leave this empty<input name="bot-field" tabIndex={-1} autoComplete="off" /></label></p>
+    <small>SEND US A MESSAGE</small>
+    <div className="two-col">
+      <input name="name" aria-label="Your name" placeholder="Your Name *" autoComplete="name" required />
+      <input name="email" aria-label="Email address" type="email" placeholder="Email Address *" autoComplete="email" required />
+      <input name="phone" aria-label="Phone number" type="tel" placeholder="Phone Number" autoComplete="tel" />
+      <select name="organisation-type" aria-label="Organisation type" defaultValue="">
+        <option value="" disabled>Organisation Type</option>
+        {orgTypes.map(type => <option key={type}>{type}</option>)}
+      </select>
+    </div>
+    <select name="subject" aria-label="Service" defaultValue="">
+      <option value="" disabled>Select a Service</option>
+      {serviceGroups.map(([group, services]) => <optgroup key={group} label={group}>
+        {services.map(service => <option key={service} value={group + ' — ' + service}>{service}</option>)}
+      </optgroup>)}
+    </select>
+    <textarea name="message" aria-label="Your message" placeholder="Your Message *" rows={7} required />
+    <label><input name="consent" value="yes" type="checkbox" required /> I agree to the privacy policy and terms of service.</label>
+    <button className="blue-btn" disabled={sending}>{sending ? 'SENDING…' : 'SEND MESSAGE'} <ArrowRight /></button>
+    <p role="status">{status}</p>
+  </form>;
+}
 const bookingOptions: Record<string,string[]> = {
  'Photography':['Corporate portraits','Events & graduation','Sports coverage','Products & industrial documentation'],
  'Videography':['Corporate videos','Documentaries','Event highlights','Promotional videos'],
@@ -390,18 +732,16 @@ export function BookingPage(){
   const form=event.currentTarget;
   const data=new FormData(form);
   data.set('services',chosenServices.join('; '));
-  const body=new URLSearchParams();data.forEach((value,key)=>body.append(key,String(value)));
   setSubmission('sending');setError('');
   try{
-   const response=await fetch('/',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:body.toString()});
-   if(!response.ok)throw new Error('Submission failed');
+   await postNetlifyForm(data);
    setSubmission('success');form.reset();setChosenServices([]);
   }catch{setSubmission('error');setError('Your request could not be sent. Please try again or email info@fokalltd.com.');}
  }
  return <><PageHero eyebrow="GET A QUOTE" title={<>Let's bring your<br/>vision to <em>life.</em></>} copy="Tell us about your project and we'll prepare a tailored quote that fits your needs." animatedBackground image={'https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/Home-Hero.jpg?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9Ib21lLUhlcm8uanBnIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4ODk1NjcxMywiZXhwIjoxODIwNDkyNzEzfQ.hOdPQ593m-ZHiVD04hpT5WqY7jV-QXcs5owUxkoZsu4'}/><main className="light-page quote-layout"><aside><small>HOW IT WORKS</small><h2>Simple. Fast. Effective.</h2>{['Tell Us About Your Project','We Review Your Requirements','Receive Your Quote'].map((x,i)=><div className="quote-step" key={x}><b>{i+1}</b><span><strong>{x}</strong>We'll guide you through each simple step.</span></div>)}</aside>
  <form name="booking" method="POST" data-netlify="true" data-netlify-honeypot="bot-field" className="fokal-form" onSubmit={submitQuote}>
  <input type="hidden" name="form-name" value="booking"/><input type="hidden" name="services" value={chosenServices.join('; ')}/><p hidden><label>Leave this empty<input name="bot-field" tabIndex={-1} autoComplete="off"/></label></p>
- <small>REQUEST A QUOTE</small><h2>Project Details</h2><div className="two-col"><input name="name" aria-label="Full Name" placeholder="Full Name *" required autoComplete="name"/><input name="organisation" aria-label="Company / Organisation" placeholder="Company / Organisation" autoComplete="organization"/><input name="email" aria-label="Email Address" type="email" placeholder="Email Address *" required autoComplete="email"/><input name="phone" aria-label="Phone Number" type="tel" placeholder="Phone Number *" required autoComplete="tel"/></div>
+ <small>REQUEST A QUOTE</small><h2>Project Details</h2><Link className="underline" to="/project-brief">What to prepare before requesting a quote</Link><div className="two-col"><input name="name" aria-label="Full Name" placeholder="Full Name *" required autoComplete="name"/><input name="organisation" aria-label="Company / Organisation" placeholder="Company / Organisation" autoComplete="organization"/><input name="email" aria-label="Email Address" type="email" placeholder="Email Address *" required autoComplete="email"/><input name="phone" aria-label="Phone Number" type="tel" placeholder="Phone Number *" required autoComplete="tel"/></div>
  <select name="organisation-type" aria-label="Organisation Type" required defaultValue=""><option value="" disabled>Organisation Type *</option>{['Private / Personal','Corporation','NGO','Government'].map(x=><option key={x}>{x}</option>)}</select>
  <fieldset className="booking-services"><legend>Services Required *</legend><p>Open a category, then a service to select the options you need.</p>{serviceGroups.map(([group,subs])=>{
  const count=chosenServices.filter(value=>subs.some(service=>value.startsWith(`${service} — `))).length;

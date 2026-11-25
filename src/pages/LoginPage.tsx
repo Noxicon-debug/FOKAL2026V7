@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Lock, Mail, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../lib/hooks/useAuth';
+import { isSupabaseConfigured } from '../lib/supabase';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -21,10 +22,11 @@ const LoginPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isSupabaseConfigured) return;
     setError('');
     setLoading(true);
     try {
-      await signIn(email, password);
+      await signIn(email.trim(), password);
       navigate('/admin');
     } catch (err: any) {
       setError(err.message || 'Invalid credentials. Please try again.');
@@ -34,6 +36,7 @@ const LoginPage: React.FC = () => {
   };
 
   const handleForgotPassword = async () => {
+    if (!isSupabaseConfigured) return;
     if (!email.trim()) {
       setError('Enter your admin email first, then use Forgot password.');
       return;
@@ -43,7 +46,7 @@ const LoginPage: React.FC = () => {
     setResetLoading(true);
     try {
       await resetPassword(email.trim(), `${window.location.origin}/reset-password`);
-      toast.success('Password reset email sent. Check your inbox.');
+      toast.success('If this email has an account, you’ll receive a password reset link.');
     } catch (err: any) {
       setError(err.message || 'Unable to send reset email. Please try again.');
     } finally {
@@ -88,6 +91,11 @@ const LoginPage: React.FC = () => {
         {/* Card */}
         <div className="bg-dark-900/80 backdrop-blur-xl border border-dark-800 rounded-2xl p-8 shadow-2xl">
           <form onSubmit={handleSubmit} className="space-y-6">
+            {!isSupabaseConfigured && (
+              <p role="alert" className="rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
+                CMS sign-in is unavailable because Supabase Auth is not configured for this site.
+              </p>
+            )}
             <div className="space-y-2">
               <Label className="text-dark-200 text-sm font-medium">Email Address</Label>
               <div className="relative">
@@ -139,7 +147,7 @@ const LoginPage: React.FC = () => {
 
             <Button
               type="submit"
-              disabled={loading || resetLoading}
+              disabled={!isSupabaseConfigured || loading || resetLoading}
               className="w-full bg-accent-500 hover:bg-accent-600 text-dark-900 font-bold h-11 text-sm tracking-wide"
             >
               {loading ? (
@@ -155,7 +163,7 @@ const LoginPage: React.FC = () => {
             <button
               type="button"
               onClick={handleForgotPassword}
-              disabled={loading || resetLoading}
+              disabled={!isSupabaseConfigured || loading || resetLoading}
               className="w-full text-sm font-medium text-accent-400 transition-colors hover:text-accent-300 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {resetLoading ? 'Sending reset email...' : 'Forgot password?'}

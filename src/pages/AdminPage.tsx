@@ -1,433 +1,274 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
-import PageTransition from '../components/common/PageTransition';
-import { Plus, Trash2, Edit2, Upload, X, Save, Image as ImageIcon, Loader2, ChevronLeft, LogOut } from 'lucide-react';
-import { useGalleryCategories, useGalleryProjects } from '../lib/hooks/useGallery';
-import { useAdminMutations } from '../lib/hooks/useAdmin';
-import { useAuth } from '../lib/hooks/useAuth';
-import { GalleryProject } from '../types/gallery';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { Button } from '../components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
-import { Button } from '../components/ui/button';
 import { Label } from '../components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Checkbox } from '../components/ui/checkbox';
+import { galleryVideo, uploadGalleryImage } from '../lib/gallery-media';
+import ClickToPlay from '../components/media/ClickToPlay';
+import { useAdminMutations } from '../lib/hooks/useAdmin';
+import { useAuth } from '../lib/hooks/useAuth';
+import { useGalleryCategories, useGalleryProjects } from '../lib/hooks/useGallery';
+import { GalleryAsset, GalleryProject, GalleryProjectFields, PublicationState, projectStatuses } from '../types/gallery';
 
-const AdminPage: React.FC = () => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [selectedProject, setSelectedProject] = useState<Partial<GalleryProject> | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const { signOut, user } = useAuth();
+type ProjectForm = GalleryProjectFields & {
+  id?: number;
+  revision?: number;
+  media: GalleryAsset[];
+};
+
+const newProject: ProjectForm = {
+  title: '', category_id: null, client: '', year: '', description: '', image_url: '',
+  order_index: 100, status: 'Completed', progress: 100, location: '', production_role: '',
+  commissioned_by: '', video_url: '', publication_state: 'draft', media: [],
+};
+
+const textFields = [
+  ['title', 'Project title'], ['client', 'Client'], ['year', 'Project date'],
+  ['location', 'Location'], ['production_role', 'Production role'],
+  ['commissioned_by', 'Commissioning organisation'], ['video_url', 'YouTube or Facebook video URL'],
+] as const;
+
+const photoTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'];
+const fieldClass = 'bg-dark-800 border-dark-700 text-white';
+const errorMessage = (error: unknown, fallback: string) =>
+  error && typeof error === 'object' && 'message' in error ? String(error.message) : fallback;
+
+export default function AdminPage() {
+  const { user, signOut, loading } = useAuth();
   const navigate = useNavigate();
+  const editorId = user?.app_metadata.gallery_editor === true ? user.id : undefined;
+  const categories = useGalleryCategories();
+  const projects = useGalleryProjects('editor', editorId);
+  const { saveProject, deleteProject } = useAdminMutations();
+  const [form, setForm] = useState<ProjectForm | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadPreviews, setUploadPreviews] = useState<Record<string, string>>({});
+  const busy = uploading || saveProject.isPending || deleteProject.isPending;
 
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      navigate('/login');
-    } catch {
-      toast.error('Failed to sign out');
+  function closeEditor() {
+    Object.values(uploadPreviews).forEach(url => URL.revokeObjectURL(url));
+    setUploadPreviews({});
+    setForm(null);
+  }
+
+  function setField<K extends keyof ProjectForm>(field: K, value: ProjectForm[K]) {
+    setForm(current => current && { ...current, [field]: value });
+  }
+
+  async function save(publication_state: PublicationState) {
+    if (!form || busy) return;
+    const { media, ...fields } = form;
+    const project = { ...fields, title: fields.title.trim(), description: (fields.description ?? '').trim(), video_url: fields.video_url.trim(), publication_state };
+    if (publication_state === 'published' && (!project.title || !project.category_id || !project.description || !project.image_url)) {
+      toast.error('Add a title, category, description, and cover image to publish.');
+      return;
     }
-  };
-
-  const { data: categories = [] } = useGalleryCategories();
-  const { data: projects = [], isLoading } = useGalleryProjects('all');
-  const adminMutations = useAdminMutations();
-
-  const handleAddProject = () => {
-    setSelectedProject({
-      title: '',
-      category_id: categories[0]?.id || '',
-      client: '',
-      year: new Date().getFullYear().toString(),
-      description: '',
-      image_url: '',
-      featured: false,
-    });
-    setIsEditing(true);
-  };
-
-  const handleEditProject = (project: GalleryProject) => {
-    setSelectedProject(project);
-    setIsEditing(true);
-  };
-
-  const handleDeleteProject = async (id: number) => {
-    if (confirm('Are you sure you want to delete this project?')) {
-      try {
-        await adminMutations.deleteProject.mutateAsync(id);
-        toast.success('Project deleted successfully');
-      } catch (err) {
-        toast.error('Failed to delete project');
-      }
+    if (project.video_url && !galleryVideo(project.video_url)) {
+      toast.error('Enter an HTTPS YouTube or Facebook video link.');
+      return;
     }
-  };
-
-  const handleSaveProject = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedProject?.title) return;
-
     try {
-      if (selectedProject.id) {
-        await adminMutations.updateProject.mutateAsync(selectedProject as GalleryProject & { id: number });
-        toast.success('Project updated successfully');
-      } else {
-        await adminMutations.addProject.mutateAsync(selectedProject as Omit<GalleryProject, 'id' | 'created_at'>);
-        toast.success('Project added successfully');
-      }
-      setIsEditing(false);
-      setSelectedProject(null);
-    } catch (err) {
-      toast.error('Failed to save project');
+      await saveProject.mutateAsync({
+        project,
+        assets: media.map((asset, index) => ({
+          type: asset.type, url: asset.url, caption: asset.caption,
+          thumbnail_url: asset.thumbnail_url, order_index: index,
+        })),
+      });
+      toast.success(publication_state === 'published' ? 'Project published' : 'Draft saved');
+      closeEditor();
+    } catch (error) {
+      toast.error(errorMessage(error, 'Could not save the project.'));
     }
-  };
+  }
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'cover' | 'media') => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setIsUploading(true);
+  async function upload(file: File | undefined, cover: boolean) {
+    if (!file || busy) return;
+    if (!photoTypes.includes(file.type) || file.size > 10 * 1024 * 1024) {
+      toast.error('Choose a JPEG, PNG, WebP, GIF, or AVIF image up to 10 MB.');
+      return;
+    }
+    setUploading(true);
     try {
-      const url = await adminMutations.uploadFile(file, 'gallery-uploads');
-      if (type === 'cover') {
-        setSelectedProject(prev => ({ ...prev, image_url: url }));
-      } else if (selectedProject?.id) {
-        await adminMutations.addMedia.mutateAsync({
-          project_id: selectedProject.id,
-          type: file.type.startsWith('video/') ? 'video' : 'image',
-          url: url,
-          thumbnail_url: null,
-          caption: file.name,
-          order_index: (selectedProject.media?.length || 0)
-        });
-        toast.success('Media added successfully');
-      }
-      toast.success('File uploaded successfully');
-    } catch (err) {
-      toast.error('Upload failed');
+      const url = await uploadGalleryImage(file);
+      setUploadPreviews(current => ({ ...current, [url]: URL.createObjectURL(file) }));
+      setForm(current => {
+        if (!current) return current;
+        if (cover) return { ...current, image_url: url };
+        const asset: GalleryAsset = {
+          type: 'image', url, caption: '', thumbnail_url: null, order_index: current.media.length,
+        };
+        return { ...current, media: [...current.media, asset] };
+      });
+    } catch (error) {
+      toast.error(errorMessage(error, 'Could not upload the photo.'));
     } finally {
-      setIsUploading(false);
+      setUploading(false);
     }
-  };
+  }
 
-  const handleDeleteMedia = async (mediaId: number) => {
+  function moveAsset(index: number, offset: number) {
+    if (!form) return;
+    const assets = [...form.media];
+    const target = index + offset;
+    [assets[index], assets[target]] = [assets[target], assets[index]];
+    setField('media', assets);
+  }
+
+  async function remove(project: GalleryProject) {
+    if (!window.confirm('Permanently delete this project?')) return;
     try {
-      await adminMutations.deleteMedia.mutateAsync(mediaId);
-      toast.success('Media deleted');
-    } catch (err) {
-      toast.error('Delete failed');
+      await deleteProject.mutateAsync(project);
+      toast.success('Project deleted');
+    } catch (error) {
+      toast.error(errorMessage(error, 'Could not delete the project.'));
     }
+  }
+
+  const preview = (reference: string) => uploadPreviews[reference] ?? projects.imageUrl(reference);
+  const selectPhoto = (cover: boolean) => (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = '';
+    void upload(file, cover);
   };
 
   return (
-    <PageTransition>
-      <div className="min-h-screen bg-dark-950 pt-32 pb-20">
-        <div className="container-custom">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
-            <div>
-              <h1 className="text-white text-4xl font-black mb-2">Content Management</h1>
-              <p className="text-dark-400">Manage your portfolio projects and gallery assets.</p>
-            </div>
-            <div className="flex items-center gap-4">
-              {user && (
-                <span className="text-dark-500 text-sm hidden md:block">{user.email}</span>
-              )}
-              <Button
-                variant="outline"
-                onClick={handleSignOut}
-                className="border-dark-700 text-dark-300 hover:text-white hover:border-red-500/50 hover:bg-red-500/10"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Sign Out
-              </Button>
-              {!isEditing && (
-                <Button
-                  onClick={handleAddProject}
-                  className="bg-accent-500 hover:bg-accent-600 text-dark-900 font-bold px-8"
-                >
-                  <Plus className="w-5 h-5 mr-2" />
-                  Add New Project
-                </Button>
-              )}
-            </div>
+    <main className="min-h-screen bg-dark-950 px-4 py-12 text-white">
+      <div className="mx-auto max-w-6xl space-y-8">
+        <header className="flex flex-wrap items-center justify-between gap-4">
+          <h1 className="text-3xl font-bold">Our Work CMS</h1>
+          <div className="flex flex-wrap gap-3">
+            <Button variant="outline" className={fieldClass} asChild><Link to="/gallery">View Our Work</Link></Button>
+            <Button variant="outline" className={fieldClass} onClick={async () => {
+              try {
+                await signOut();
+                navigate('/login');
+              } catch {
+                toast.error('Could not sign out.');
+              }
+            }}>Sign out</Button>
           </div>
-
-          {isEditing ? (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="grid grid-cols-1 lg:grid-cols-3 gap-8"
-            >
-              <Card className="lg:col-span-2 bg-dark-900 border-dark-800">
-                <CardHeader>
-                  <CardTitle className="text-white">
-                    {selectedProject?.id ? 'Edit Project' : 'Create Project'}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleSaveProject} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label className="text-dark-200">Project Title</Label>
-                        <Input 
-                          value={selectedProject?.title}
-                          onChange={e => setSelectedProject(prev => ({ ...prev, title: e.target.value }))}
-                          placeholder="e.g. Corporate Brand Video"
-                          className="bg-dark-800 border-dark-700 text-white"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-dark-200">Category</Label>
-                        <Select 
-                          value={selectedProject?.category_id}
-                          onValueChange={val => setSelectedProject(prev => ({ ...prev, category_id: val }))}
-                        >
-                          <SelectTrigger className="bg-dark-800 border-dark-700 text-white">
-                            <SelectValue placeholder="Select Category" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-dark-800 border-dark-700">
-                            {categories.map(cat => (
-                              <SelectItem key={cat.id} value={cat.id} className="text-white hover:bg-dark-700">
-                                {cat.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label className="text-dark-200">Client Name</Label>
-                        <Input 
-                          value={selectedProject?.client}
-                          onChange={e => setSelectedProject(prev => ({ ...prev, client: e.target.value }))}
-                          placeholder="e.g. TWM Ltd"
-                          className="bg-dark-800 border-dark-700 text-white"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-dark-200">Project Year</Label>
-                        <Input 
-                          value={selectedProject?.year}
-                          onChange={e => setSelectedProject(prev => ({ ...prev, year: e.target.value }))}
-                          placeholder="2025"
-                          className="bg-dark-800 border-dark-700 text-white"
-                        />
-                      </div>
-                    </div>
-
+        </header>
+        {loading ? <p role="status">Checking access…</p> : !editorId ? (
+          <p role="alert">This account needs Our Work editor access. Contact your Supabase administrator.</p>
+        ) : form ? (
+          <form onSubmit={event => { event.preventDefault(); void save(form.publication_state); }}>
+            <fieldset disabled={busy} className="space-y-6">
+              <div className="grid gap-6 lg:grid-cols-2">
+                <Card className="border-dark-800 bg-dark-900 text-white">
+                  <CardHeader><CardTitle>{form.id ? 'Edit project' : 'New project'}</CardTitle></CardHeader>
+                  <CardContent className="grid gap-4 sm:grid-cols-2">
+                    {textFields.map(([field, label]) => (
+                      <Label key={field} className="space-y-2">
+                        <span>{label}</span>
+                        <Input className={fieldClass} value={form[field] ?? ''} onChange={event => setField(field, event.target.value)} />
+                      </Label>
+                    ))}
                     <div className="space-y-2">
-                      <Label className="text-dark-200">Description</Label>
-                      <Textarea 
-                        value={selectedProject?.description}
-                        onChange={e => setSelectedProject(prev => ({ ...prev, description: e.target.value }))}
-                        placeholder="Describe the project..."
-                        className="bg-dark-800 border-dark-700 text-white min-h-[120px]"
-                      />
+                      <Label htmlFor="work-category">Category</Label>
+                      <select id="work-category" className={fieldClass + ' h-10 w-full rounded-md border px-3'} value={form.category_id ?? ''} onChange={event => setField('category_id', event.target.value || null)}>
+                        <option value="">Select a category</option>
+                        {categories.data?.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}
+                      </select>
                     </div>
-
-                    <div className="flex items-center space-x-2">
-                      <Checkbox 
-                        id="featured" 
-                        checked={selectedProject?.featured}
-                        onCheckedChange={checked => setSelectedProject(prev => ({ ...prev, featured: !!checked }))}
-                        className="border-accent-500 data-[state=checked]:bg-accent-500"
-                      />
-                      <Label htmlFor="featured" className="text-white">Feature this project on homepage</Label>
+                    <div className="space-y-2">
+                      <Label htmlFor="work-status">Project status</Label>
+                      <select id="work-status" className={fieldClass + ' h-10 w-full rounded-md border px-3'} value={form.status} onChange={event => setField('status', event.target.value as ProjectForm['status'])}>
+                        {projectStatuses.map(status => <option key={status}>{status}</option>)}
+                      </select>
                     </div>
-
-                    <div className="flex gap-4 pt-6">
-                      <Button type="submit" className="bg-accent-500 hover:bg-accent-600 text-dark-900 font-bold px-8">
-                        <Save className="w-4 h-4 mr-2" />
-                        Save Project
-                      </Button>
-                      <Button 
-                        type="button" 
-                        variant="outline"
-                        onClick={() => setIsEditing(false)}
-                        className="border-dark-700 text-dark-300 hover:text-white"
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </form>
-                </CardContent>
-              </Card>
-
-              <div className="space-y-8">
-                <Card className="bg-dark-900 border-dark-800">
-                  <CardHeader>
-                    <CardTitle className="text-white">Cover Image</CardTitle>
-                    <CardDescription className="text-dark-400">This is the primary image shown in the gallery list.</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-dark-800 border-2 border-dashed border-dark-700 flex items-center justify-center">
-                      {selectedProject?.image_url ? (
-                        <>
-                          <img src={selectedProject.image_url} alt="Cover" className="w-full h-full object-cover" />
-                          <button 
-                            className="absolute top-2 right-2 p-1.5 bg-red-500 rounded-full text-white"
-                            onClick={() => setSelectedProject(prev => ({ ...prev, image_url: '' }))}
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </>
-                      ) : (
-                        <div className="text-center p-6">
-                          {isUploading ? (
-                            <Loader2 className="w-8 h-8 text-accent-500 animate-spin mx-auto mb-2" />
-                          ) : (
-                            <Upload className="w-8 h-8 text-dark-600 mx-auto mb-2" />
-                          )}
-                          <p className="text-dark-400 text-sm mb-4">Click to upload cover image</p>
-                          <Input 
-                            type="file" 
-                            className="hidden" 
-                            id="cover-upload" 
-                            accept="image/*"
-                            onChange={e => handleFileUpload(e, 'cover')}
-                            disabled={isUploading}
-                          />
-                          <Button 
-                            variant="outline" 
-                            asChild
-                            disabled={isUploading}
-                            className="border-dark-700 text-dark-300"
-                          >
-                            <label htmlFor="cover-upload" className="cursor-pointer">Browse Files</label>
-                          </Button>
-                        </div>
-                      )}
-                    </div>
+                    <Label className="space-y-2">
+                      <span>Progress (%)</span>
+                      <Input className={fieldClass} type="number" min="0" max="100" required value={Number.isNaN(form.progress) ? '' : form.progress} onChange={event => setField('progress', event.target.valueAsNumber)} />
+                    </Label>
+                    <Label className="space-y-2">
+                      <span>Display order</span>
+                      <Input className={fieldClass} type="number" required value={Number.isNaN(form.order_index) ? '' : form.order_index} onChange={event => setField('order_index', event.target.valueAsNumber)} />
+                    </Label>
+                    <Label className="space-y-2 sm:col-span-2">
+                      <span>Description</span>
+                      <Textarea className={fieldClass} rows={6} value={form.description ?? ''} onChange={event => setField('description', event.target.value)} />
+                    </Label>
                   </CardContent>
                 </Card>
 
-                {selectedProject?.id && (
-                  <Card className="bg-dark-900 border-dark-800">
-                    <CardHeader>
-                      <CardTitle className="text-white">Project Assets</CardTitle>
-                      <CardDescription className="text-dark-400">Additional images and videos for the project sub-gallery.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid grid-cols-2 gap-3">
-                        {selectedProject.media?.map(m => (
-                          <div key={m.id} className="relative aspect-video rounded-lg overflow-hidden group">
-                            <img src={m.type === 'video' ? (m.thumbnail_url || selectedProject.image_url) : m.url} alt={m.caption} className="w-full h-full object-cover" />
-                            <div className="absolute inset-0 bg-dark-950/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                              <button 
-                                onClick={() => handleDeleteMedia(m.id)}
-                                className="p-2 bg-red-500 text-white rounded-full"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
+                <Card className="border-dark-800 bg-dark-900 text-white">
+                  <CardHeader><CardTitle>Project media</CardTitle></CardHeader>
+                  <CardContent className="space-y-5">
+                    {preview(form.image_url) && <img src={preview(form.image_url)} alt="Project cover" className="max-h-56 rounded object-contain" />}
+                    <Label className="block space-y-2">
+                      <span>{form.image_url ? 'Replace cover photo' : 'Upload cover photo'}</span>
+                      <Input className={fieldClass} type="file" accept={photoTypes.join(',')} onChange={selectPhoto(true)} />
+                    </Label>
+                    {form.image_url && <Button type="button" variant="outline" className={fieldClass} onClick={() => setField('image_url', '')}>Remove cover</Button>}
+                    <Label className="block space-y-2">
+                      <span>Add a gallery photo</span>
+                      <Input className={fieldClass} type="file" accept={photoTypes.join(',')} onChange={selectPhoto(false)} />
+                    </Label>
+                    <ol className="space-y-4">
+                      {form.media.map((asset, index) => (
+                        <li key={asset.url + ':' + index} className="space-y-2 rounded border border-dark-700 p-3">
+                          {asset.type === 'image' && preview(asset.url) && <img src={preview(asset.url)} alt={asset.caption || 'Gallery photo'} className="max-h-36 rounded object-contain" />}
+                          {asset.type === 'video' && <p>Video attachment</p>}
+                          <Label className="block space-y-2">
+                            <span>Caption</span>
+                            <Input className={fieldClass} value={asset.caption ?? ''} onChange={event => setField('media', form.media.map((item, position) => position === index ? { ...item, caption: event.target.value } : item))} />
+                          </Label>
+                          <div className="flex flex-wrap gap-2">
+                            <Button type="button" size="sm" className={fieldClass} disabled={index === 0} onClick={() => moveAsset(index, -1)}>Move up</Button>
+                            <Button type="button" size="sm" className={fieldClass} disabled={index === form.media.length - 1} onClick={() => moveAsset(index, 1)}>Move down</Button>
+                            <Button type="button" size="sm" variant="destructive" onClick={() => setField('media', form.media.filter((_, position) => position !== index))}>Remove</Button>
                           </div>
-                        ))}
-                      </div>
-                      
-                      <div className="pt-4">
-                        <Input 
-                          type="file" 
-                          className="hidden" 
-                          id="media-upload" 
-                          accept="image/*,video/*"
-                          onChange={e => handleFileUpload(e, 'media')}
-                          disabled={isUploading}
-                        />
-                        <Button 
-                          className="w-full bg-dark-800 border-dark-700 text-white hover:bg-dark-700"
-                          asChild
-                          disabled={isUploading}
-                        >
-                          <label htmlFor="media-upload" className="cursor-pointer">
-                            {isUploading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
-                            Add Asset
-                          </label>
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
+                        </li>
+                      ))}
+                    </ol>
+                  </CardContent>
+                </Card>
               </div>
-            </motion.div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {isLoading ? (
-                Array(6).fill(0).map((_, i) => (
-                  <Card key={i} className="bg-dark-900 border-dark-800 animate-pulse">
-                    <div className="aspect-[4/3] bg-dark-800" />
+              <div className="flex flex-wrap gap-3">
+                <Button type="submit" className="bg-accent-500 text-dark-950">{form.publication_state === 'published' ? 'Save changes' : 'Save draft'}</Button>
+                {form.publication_state === 'draft'
+                  ? <Button type="button" variant="outline" className={fieldClass} onClick={event => { if (event.currentTarget.form?.reportValidity()) void save('published'); }}>Publish</Button>
+                  : <Button type="button" variant="outline" className={fieldClass} onClick={event => { if (event.currentTarget.form?.reportValidity()) void save('draft'); }}>Unpublish</Button>}
+                <Button type="button" variant="outline" className={fieldClass} onClick={closeEditor}>Cancel</Button>
+              </div>
+            </fieldset>
+            {busy && <p className="mt-4" role="status">{uploading ? 'Uploading photo…' : 'Saving project…'}</p>}
+          </form>
+        ) : (
+          <>
+            <Button className="bg-accent-500 text-dark-950" disabled={categories.isLoading || categories.isError} onClick={() => setForm({ ...newProject })}>Add project</Button>
+            {(projects.isLoading || categories.isLoading) && <p role="status">Loading projects…</p>}
+            {(projects.isError || categories.isError) && <p role="alert">Could not load the portfolio. <button className="underline" onClick={() => { projects.retry(); void categories.refetch(); }}>Try again</button></p>}
+            {projects.isSuccess && !projects.data.length && <p>No projects yet.</p>}
+            <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {projects.data?.map(project => {
+                const video = galleryVideo(project.video_url);
+                const cover = preview(project.image_url);
+                return (
+                <li key={project.id}>
+                  <Card className="overflow-hidden border-dark-800 bg-dark-900 text-white">
+                    {video ? <ClickToPlay key={project.video_url} title={project.title} {...video} poster={cover || undefined} />
+                      : cover && <img loading="lazy" className="aspect-[4/3] w-full object-cover" src={cover} alt="" />}
                     <CardHeader>
-                      <div className="h-6 w-3/4 bg-dark-800 rounded" />
+                      <CardTitle>{project.title || 'Untitled project'}</CardTitle>
+                      <p>{project.publication_state === 'published' ? 'Published' : 'Draft'}</p>
                     </CardHeader>
-                  </Card>
-                ))
-              ) : (
-                projects.map(project => (
-                  <Card key={project.id} className="bg-dark-900 border-dark-800 hover:border-accent-500/50 transition-all group overflow-hidden">
-                    <div className="relative aspect-[4/3]">
-                      <img src={project.image_url} alt={project.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-dark-950 to-transparent opacity-60" />
-                      <div className="absolute top-3 right-3 flex gap-2">
-                        {project.featured && (
-                          <div className="bg-accent-500 text-dark-900 text-[10px] font-black px-2 py-1 rounded">FEATURED</div>
-                        )}
-                        <div className="bg-dark-900/80 text-white text-[10px] font-black px-2 py-1 rounded uppercase">
-                          {project.category_id}
-                        </div>
-                      </div>
-                    </div>
-                    <CardHeader className="pb-4">
-                      <CardTitle className="text-white text-xl line-clamp-1">{project.title}</CardTitle>
-                      <CardDescription className="text-dark-400">{project.client} • {project.year}</CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex justify-between items-center pt-0">
-                      <div className="flex gap-2">
-                        <Button 
-                          size="sm" 
-                          variant="ghost" 
-                          className="text-dark-300 hover:text-white hover:bg-dark-800"
-                          onClick={() => handleEditProject(project)}
-                        >
-                          <Edit2 className="w-4 h-4 mr-2" />
-                          Edit
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="ghost" 
-                          className="text-red-400 hover:text-red-500 hover:bg-red-500/10"
-                          onClick={() => handleDeleteProject(project.id)}
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Delete
-                        </Button>
-                      </div>
-                      <div className="flex items-center text-dark-500 text-xs">
-                        <ImageIcon className="w-3 h-3 mr-1" />
-                        {project.media?.length || 0}
-                      </div>
+                    <CardContent className="flex flex-wrap gap-2">
+                      <Button className={fieldClass} variant="outline" disabled={busy || categories.isError} onClick={() => setForm(project)}>Edit</Button>
+                      <Button variant="destructive" disabled={busy} onClick={() => void remove(project)}>Delete</Button>
                     </CardContent>
                   </Card>
-                ))
-              )}
-            </div>
-          )}
-          
-          <div className="mt-20 pt-12 border-t border-dark-800 flex justify-between items-center">
-            <Button variant="ghost" className="text-dark-400 hover:text-white" asChild>
-              <a href="/">
-                <ChevronLeft className="w-4 h-4 mr-2" />
-                Back to Site
-              </a>
-            </Button>
-            <p className="text-dark-600 text-xs font-medium tracking-widest uppercase">FOKAL CMS v1.0</p>
-          </div>
-        </div>
+                </li>
+                );
+              })}
+            </ul>
+          </>
+        )}
       </div>
-    </PageTransition>
+    </main>
   );
-};
-
-export default AdminPage;
+}
