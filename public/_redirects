@@ -1,1 +1,3 @@
+/work/:projectId/cover   /.netlify/functions/project-share?projectId=:projectId&cover=1   200
+/work/:projectId   /.netlify/functions/project-share?projectId=:projectId   200
 /*    /index.html   200

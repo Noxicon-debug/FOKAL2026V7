@@ -14,12 +14,14 @@ const queryClient = new QueryClient();
 const AdminPage = lazy(() => import('./pages/AdminPage'));
 const HomePage = lazy(() => import('./pages/SitePages').then(module => ({ default: module.HomePage })));
 const ServicesPage = lazy(() => import('./pages/SitePages').then(module => ({ default: module.ServicesPage })));
+const ServiceDetailPage = lazy(() => import('./pages/SitePages').then(module => ({ default: module.ServiceDetailPage })));
 const AboutPage = lazy(() => import('./pages/SitePages').then(module => ({ default: module.AboutPage })));
 const ContactPage = lazy(() => import('./pages/SitePages').then(module => ({ default: module.ContactPage })));
 const GalleryPage = lazy(() => import('./pages/SitePages').then(module => ({ default: module.GalleryPage })));
 const PhotographyPage = lazy(() => import('./pages/PhotographyPage'));
 const ProjectOverviewPage = lazy(() => import('./pages/SitePages').then(module => ({default:module.ProjectOverviewPage})));
 const BookingPage = lazy(() => import('./pages/SitePages').then(module => ({ default: module.BookingPage })));
+const ProjectBriefPage = lazy(() => import('./pages/ProjectBriefPage'));
 
 import HoverReceiver from "@/visual-edits/VisualEditsMessenger";
 
@@ -57,12 +59,15 @@ function App() {
                   <Routes location={location} key={location.pathname}>
                     <Route path="/" element={<HomePage />} />
                     <Route path="/services" element={<ServicesPage />} />
+                    <Route path="/services/:slug" element={<ServiceDetailPage />} />
                     <Route path="/about" element={<AboutPage />} />
                     <Route path="/contact" element={<ContactPage />} />
                     <Route path="/gallery" element={<GalleryPage />} />
+                    <Route path="/work/:projectId" element={<GalleryPage />} />
                     <Route path="/photography" element={<PhotographyPage />} />
                     <Route path="/projects/:slug" element={<ProjectOverviewPage />} />
                     <Route path="/booking" element={<BookingPage />} />
+                    <Route path="/project-brief" element={<ProjectBriefPage />} />
                     <Route path="*" element={<NotFoundPage />} />
                   </Routes>
                 </AnimatePresence></Suspense>
