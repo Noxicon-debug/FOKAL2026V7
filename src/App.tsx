@@ -14,6 +14,7 @@ const queryClient = new QueryClient();
 const AdminPage = lazy(() => import('./pages/AdminPage'));
 const HomePage = lazy(() => import('./pages/SitePages').then(module => ({ default: module.HomePage })));
 const ServicesPage = lazy(() => import('./pages/SitePages').then(module => ({ default: module.ServicesPage })));
+const ServiceDetailPage = lazy(() => import('./pages/SitePages').then(module => ({ default: module.ServiceDetailPage })));
 const AboutPage = lazy(() => import('./pages/SitePages').then(module => ({ default: module.AboutPage })));
 const ContactPage = lazy(() => import('./pages/SitePages').then(module => ({ default: module.ContactPage })));
 const GalleryPage = lazy(() => import('./pages/SitePages').then(module => ({ default: module.GalleryPage })));
@@ -58,6 +59,7 @@ function App() {
                   <Routes location={location} key={location.pathname}>
                     <Route path="/" element={<HomePage />} />
                     <Route path="/services" element={<ServicesPage />} />
+                    <Route path="/services/:slug" element={<ServiceDetailPage />} />
                     <Route path="/about" element={<AboutPage />} />
                     <Route path="/contact" element={<ContactPage />} />
                     <Route path="/gallery" element={<GalleryPage />} />

@@ -57,7 +57,7 @@ export default async function projectShare(request) {
     const title = escapeHtml(project.title + ' | Fokal Solutions');
     const description = escapeHtml((project.description || '').trim().slice(0, 200) || 'A Fokal Solutions project.');
     const image = escapeHtml(privateCover ? canonical + '/cover' : coverUrl(project.image_url, supabase));
-    html = html.replace(/<title>[^<]*<\/title>|<meta\s+(?:name|property)=["'](?:description|og:(?:title|description|url|image(?::[^"']+)?)|twitter:(?:title|description|url|image))["'][^>]*>|<link\s+rel=["']canonical["'][^>]*>/gi, '');
+    html = html.replace(/<title(?:\s+data-rh="true")?>[^<]*<\/title>|<meta\s+(?:data-rh="true"\s+)?(?:name|property)=["'](?:description|og:(?:title|description|url|image(?::[^"']+)?)|twitter:(?:title|description|url|image))["'][^>]*>|<link\s+(?:data-rh="true"\s+)?rel=["']canonical["'][^>]*>/gi, '');
     const metadata = [
       '<title>' + title + '</title>',
       '<link rel="canonical" href="' + canonical + '">',

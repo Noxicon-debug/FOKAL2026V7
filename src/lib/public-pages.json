@@ -1,0 +1,16 @@
+{
+  "/": {"title":"Fokal Solutions | Media, Marketing & Events in PNG","description":"Fokal Solutions delivers media production, marketing and event services across Papua New Guinea."},
+  "/about": {"title":"About Fokal Solutions | Our Team and Story","description":"Meet the production, marketing and events team behind Fokal Solutions in Port Moresby."},
+  "/services": {"title":"Media, Marketing & Event Services in PNG | Fokal","description":"Explore video production, photography, live streaming, events, marketing and branding across Papua New Guinea."},
+  "/gallery": {"title":"Media & Event Portfolio | Fokal Solutions","description":"Explore video, photography and event projects by Fokal Solutions across Papua New Guinea."},
+  "/contact": {"title":"Contact Fokal Solutions in Port Moresby","description":"Talk to our Port Moresby team about your next media, marketing or event project in Papua New Guinea."},
+  "/booking": {"title":"Request a Quote | Fokal Solutions","description":"Request a tailored quote for media production, marketing or event services in Papua New Guinea."},
+  "/project-brief": {"title":"What to Prepare | Fokal Solutions","description":"Checklists for photography, video, live streaming and event production in Papua New Guinea."},
+  "/photography": {"title":"PNGDF Commanders Cup 2026 Photography | Fokal","description":"See Fokal Solutions’ sports photography from the 2026 PNGDF Commanders Cup.","image":"/media/commanders-cup-14-1280.webp"},
+  "/projects/guardians-of-the-sea": {"title":"Guardians of the Sea | Fokal Solutions","description":"Watch Guardians of the Sea and explore Fokal Solutions’ work on the film.","image":"https://i.ytimg.com/vi/oh1jUFaVbwo/hqdefault.jpg"},
+  "/projects/governor-allan-bird-cocoa-training": {"title":"Cocoa Fertilizer Training Film | Fokal Solutions","description":"See how Fokal Solutions documented Governor Allan Bird’s cocoa fertilizer training in 2024.","image":"https://i.ytimg.com/vi/t7jFfb65dpU/hqdefault.jpg"},
+  "/projects/bougainville-chocolate-festival-2025": {"title":"Bougainville Chocolate Festival 2025 Film | Fokal","description":"Watch Fokal Solutions’ coverage of the 2025 Bougainville Chocolate Festival.","image":"https://i.ytimg.com/vi/CLDt8SkPCOQ/hqdefault.jpg"},
+  "/services/video-production": {"title":"Video Production in Papua New Guinea | Fokal","description":"Book video production for documentaries, campaigns and events in Papua New Guinea, from planning and filming to final edits."},
+  "/services/live-streaming": {"title":"Live Streaming in Papua New Guinea | Fokal","description":"Book multi-camera live streaming for conferences, ceremonies and events in Port Moresby and across PNG.","image":"/media/ibbm-corporate-live-stream.webp"},
+  "/services/event-production": {"title":"Event Production in Papua New Guinea | Fokal","description":"Plan events in Papua New Guinea with Fokal Solutions, from run sheets and staging to on-site production."}
+}

@@ -21,6 +21,7 @@ import { getPublicImageUrl } from '../lib/media';
 import { responsiveImage } from '../lib/media-assets';
 import ResponsiveImage from '../components/media/ResponsiveImage';
 import BackgroundVideo from '../components/media/BackgroundVideo';
+import NotFoundPage from './NotFoundPage';
 import ClickToPlay from '../components/media/ClickToPlay';
 import {cupTitle,cupIntro,cupDescription,cupPhotos} from '../components/media/CommandersCup';
 import { optimizedImage } from '../lib/media-assets';
@@ -60,6 +61,7 @@ const SUPABASE_ASSETS = {
 const HOME_TEAM_IMAGE = responsiveImage('home/team', SUPABASE_ASSETS.team, 1280, 900);
 const ABOUT_BTS_IMAGE = responsiveImage('about/behind-the-scenes', SUPABASE_ASSETS.aboutBts, 1280, 900);
 const services: [string, any, string, string[]][] = [
+  ['Video Production', Video, 'Documentaries, campaign films and event coverage from planning to final edits.', ['/media/work-poster.webp']],
   ['Photography', Camera, 'Capturing moments that tell your story with clarity and impact.', ['/images/photo1.jpg']],
   ['Live Streaming', Radio, 'Professional live streaming solutions for events of any scale.', ['/images/LIV_1.jpg', '/images/live2.jpg', 'https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/Live%20Ev.jpg?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9MaXZlIEV2LmpwZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODg5NTIxODIsImV4cCI6MTgyMDQ4ODE4Mn0.dcerR3n-bErPM-r7df_cModdn_1sNBw5nCxXuUITlzQ']],
   ['Events', CalendarDays, 'End-to-end event production and management.', ['https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/EVNT%202.jpeg?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9FVk5UIDIuanBlZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODg5NTE4MzgsImV4cCI6MTgyMDQ4NzgzOH0._HBlZAjovTJZkeib1pKh7i_HGJOMtbznNyVL0lOt7l8', 'https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/EVNT1.jpeg?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9FVk5UMS5qcGVnIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4ODk1MTg1MCwiZXhwIjoxODIwNDg3ODUwfQ.-w69gsXNMp-F4TBedLSLQuW2IICzzSHMer2ljYnK4Mw', 'https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/EVNT3.jpeg?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9FVk5UMy5qcGVnIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4ODk1MTg2MywiZXhwIjoxODIwNDg3ODYzfQ.Ro59TkRwaD8G8zpjrNgMAmQ8YqhWbUVUl5CKwXRzpOs']],
@@ -68,6 +70,10 @@ const services: [string, any, string, string[]][] = [
   ['Staging & AV', Lightbulb, 'Stage, lighting, sound and AV solutions for unforgettable events.', ['https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/STG1.jpg?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9TVEcxLmpwZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODg5NTIwNDAsImV4cCI6MTgyMDQ4ODA0MH0.Mo-sMrKyUiIYBY8nqnaLapkgOdPNrA_p3lQP_TbXoq8', 'https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/stg2.jpg?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9zdGcyLmpwZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODg5NTIwNTgsImV4cCI6MTgyMDQ4ODA1OH0.npymI9u6X81gryjY5ofG3kmQykE2HWqdXSvqxT6KUls', 'https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/stg3.jpg?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9zdGczLmpwZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODg5NTIwNzMsImV4cCI6MTgyMDQ4ODA3M30.EusymCJe59x5Bc-8HcBAPv3qnN4FR4cr4tkzm460vN4', 'https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/stg4.jpg?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9zdGc0LmpwZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODg5NTIwODYsImV4cCI6MTgyMDQ4ODA4Nn0.P-NMqHzEXr43SsMPDhKmjYQN6qE-tBriv9-Ooc5627s']],
 ];
 const serviceDetails: Record<string, { overview: string; deliverables: string[] }> = {
+  'Video Production': {
+    overview: 'We plan, film and edit documentaries, campaign films and event coverage for organisations in Port Moresby and across Papua New Guinea. Tell us your audience, deadlines and where the finished video will be shown so we can scope the shoot and edits.',
+    deliverables: ['Creative planning and shoot coordination', 'On-location filming and audio capture', 'Editing, colour grading and sound finishing', 'Final video files for agreed platforms'],
+  },
   Photography: { overview: 'From sports action and graduation celebrations to executive portraits, corporate events and industrial documentation, our photographers combine careful planning, strong composition and professional post-production to create images that communicate clearly and remain useful across print, digital and social channels.', deliverables: ['Sports photography — action, teamwork and competition highlights', 'Graduation photography — portraits, ceremonies and milestone moments', 'Professional portraits and corporate event coverage', 'Industrial documentation and retouched high-resolution images'] },
   'Live Streaming': { overview: 'We deliver reliable multi-camera broadcasts for conferences, ceremonies, launches and public events. Our team manages capture, switching, graphics, audio, connectivity and platform delivery so audiences can join from anywhere with a polished viewing experience.', deliverables: ['Multi-camera production', 'Live graphics and lower thirds', 'Platform setup and stream monitoring', 'Recorded master and highlight edits'] },
   Events: { overview: 'Our event team coordinates the complete production journey, from concept and run sheet development through suppliers, staging, guest experience and on-site delivery. Every moving part is managed around your objectives, audience and venue.', deliverables: ['Event planning and coordination', 'Technical production management', 'Stage and programme direction', 'On-site crew and post-event reporting'] },
@@ -401,7 +407,89 @@ function ServiceModal({service,onClose}:{service:Service,onClose:()=>void}){
  const active=showcase[slide];
  return <div className="service-modal-overlay" onClick={onClose} role="presentation"><section className="service-modal" role="dialog" aria-modal="true" aria-labelledby="service-modal-title" onClick={event=>event.stopPropagation()}><button className="service-modal-close" onClick={onClose} aria-label="Close service details"><X/></button><div className="service-modal-showcase"><ResponsiveImage asset={optimizedImage(active.image)} alt={active.title} sizes="(max-width: 760px) 100vw, 510px" priority/><div className="service-slide-copy"><small>PREVIOUS PROJECT</small><strong>{active.title}</strong>{active.description&&<p>{active.description}</p>}</div>{showcase.length>1&&<><button className="service-slide-arrow previous" onClick={()=>setSlide(current=>(current-1+showcase.length)%showcase.length)} aria-label="Previous project"><ChevronLeft/></button><button className="service-slide-arrow next" onClick={()=>setSlide(current=>(current+1)%showcase.length)} aria-label="Next project"><ChevronRight/></button><div className="service-slide-dots">{showcase.map((item,index)=><button key={item.title} className={index===slide?'active':''} onClick={()=>setSlide(index)} aria-label={`Show project ${index+1}`}/>)}</div></>}</div><div className="service-modal-content"><div className="service-modal-heading"><Icon/><div><small>OUR SERVICE</small><h2 id="service-modal-title">{name}</h2><p>{copy}</p></div></div><p className="service-modal-overview">{serviceDetails[name].overview}</p><h3>What we deliver</h3><div className="service-deliverables">{serviceDetails[name].deliverables.map(item=><span key={item}><Check/> {item}</span>)}</div><Button to="/contact">DISCUSS YOUR PROJECT</Button></div></section></div>;
 }
-export function ServicesPage(){const [selectedService,setSelectedService]=useState<Service|null>(null);return <><PageHero eyebrow="OUR SERVICES" title={<>Solutions that bring<br/>your vision to life.</>} copy="A full range of media production, marketing and events solutions tailored to exceed your expectations." image="https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/Wide%20services.jpg?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9XaWRlIHNlcnZpY2VzLmpwZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODg2MDAwNzAsImV4cCI6MTgyMDEzNjA3MH0.Au76AQFXKFv-bZcFVfGMzkwHV6Z2H_NLZTIM2XfuBmU" animatedBackground/><main className="light-page"><section className="services-intro"><p>Fokal Solutions Limited delivers end-to-end creative and strategic services that empower brands, organisations, and communities to communicate effectively and make a meaningful impact. Our work spans media production, marketing, research, and live event execution, offering clients a one-stop partner for visual storytelling, audience engagement, insight-driven strategy, and memorable experiences. Every service we provide is tailored to our clients' goals, ensuring purposeful, professional, and grounded outcomes.</p></section><section className="service-grid">{services.map((service)=>{const [name,Icon,copy,imgs]=service;return <article className="service-card-interactive" key={name} role="button" tabIndex={0} aria-label={`View ${name} service details`} onClick={()=>setSelectedService(service)} onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();setSelectedService(service);}}}><div className="service-card-text"><Icon/><h3>{name}</h3><p>{copy}</p>{['Creative strategy','Professional production','Experienced team','Reliable delivery'].map(x=><span key={x}><Check/> {x}</span>)}<b className="service-card-action">EXPLORE SERVICE <ArrowRight/></b></div><ServiceThumbnail images={imgs} alt={name}/></article>;})}</section><section className="process"><div><small>OUR PROCESS</small><h2>From Concept<br/>to Completion.</h2></div>{['Discover','Plan','Create','Deliver','Measure'].map((x,i)=><div key={x}><b>0{i+1}</b><strong>{x}</strong><span>Focused work that moves your vision forward.</span></div>)}</section></main><CTA/>{selectedService&&<ServiceModal service={selectedService} onClose={()=>setSelectedService(null)}/>}</>}
+const servicePages = [
+  { slug: 'video-production', name: 'Video Production', project: { title: 'Guardians of the Sea', path: '/projects/guardians-of-the-sea' } },
+  { slug: 'live-streaming', name: 'Live Streaming', project: { title: 'Corporate Live Stream', image: '/media/ibbm-corporate-live-stream.webp', description: 'Multi-camera coverage, live switching and audio for audiences in the room and online.' } },
+  { slug: 'event-production', name: 'Events', project: { title: 'Bougainville Chocolate Festival 2025', path: '/projects/bougainville-chocolate-festival-2025' } },
+];
+
+export function ServiceDetailPage() {
+  const { slug } = useParams();
+  const service = servicePages.find(page => page.slug === slug);
+  if (!service) return <NotFoundPage />;
+
+  const name = service.name === 'Events' ? 'Event Production' : service.name;
+  const { overview, deliverables } = serviceDetails[service.name];
+  const project = service.project;
+
+  return (
+    <main className="light-page photography-page project-overview">
+      <Link to="/services">← All services</Link>
+      <h1>{name} in Papua New Guinea</h1>
+      <p>Based in Port Moresby and available for projects across Papua New Guinea.</p>
+      <p>{overview}</p>
+      <h2>What we deliver</h2>
+      <ul className="list-disc pl-6">{deliverables.map(item => <li key={item}>{item}</li>)}</ul>
+      <h2>Related work</h2>
+      {project.path ? (
+        <Link to={project.path}>{project.title} <span aria-hidden="true">→</span></Link>
+      ) : (
+        <figure>
+          <img src={project.image} alt="Corporate live streaming setup" loading="lazy" decoding="async" />
+          <figcaption><strong>{project.title}</strong> · {project.description}</figcaption>
+        </figure>
+      )}
+      <div className="mt-6"><Button to="/booking">Request a quote</Button></div>
+    </main>
+  );
+}
+
+export function ServicesPage() {
+  const [selectedService, setSelectedService] = useState<Service | null>(null);
+  return (
+    <>
+      <PageHero eyebrow="OUR SERVICES" title={<>Solutions that bring<br/>your vision to life.</>} copy="A full range of media production, marketing and events solutions tailored to exceed your expectations." image="https://pixzptkgvkiyzdaeffqc.supabase.co/storage/v1/object/sign/images/2026%20Content%20/Wide%20services.jpg?token=eyJraWQiOiJkMmZiYjA1NS0zYzg5LTRmMmMtODZiOS1lNDkwNDFhZWU4NWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvMjAyNiBDb250ZW50IC9XaWRlIHNlcnZpY2VzLmpwZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODg2MDAwNzAsImV4cCI6MTgyMDEzNjA3MH0.Au76AQFXKFv-bZcFVfGMzkwHV6Z2H_NLZTIM2XfuBmU" animatedBackground/>
+      <main className="light-page">
+        <section className="services-intro"><p>Fokal Solutions Limited delivers end-to-end creative and strategic services that empower brands, organisations, and communities to communicate effectively and make a meaningful impact. Our work spans media production, marketing, research, and live event execution, offering clients a one-stop partner for visual storytelling, audience engagement, insight-driven strategy, and memorable experiences. Every service we provide is tailored to our clients' goals, ensuring purposeful, professional, and grounded outcomes.</p></section>
+        <section className="service-grid">
+          {services.map(service => {
+            const [name, Icon, copy, images] = service;
+            const page = servicePages.find(entry => entry.name === name);
+            const content = (
+              <>
+                <div className="service-card-text">
+                  <Icon aria-hidden="true" />
+                  <h3>{name}</h3>
+                  <p>{copy}</p>
+                  {['Creative strategy', 'Professional production', 'Experienced team', 'Reliable delivery'].map(item => <span key={item}><Check /> {item}</span>)}
+                  <b className="service-card-action">Explore service <ArrowRight /></b>
+                </div>
+                <ServiceThumbnail images={images} alt={name} />
+              </>
+            );
+            return page ? (
+              <Link className="service-card-interactive" key={name} to={`/services/${page.slug}`} aria-label={`Explore ${name}`}>{content}</Link>
+            ) : (
+              <article className="service-card-interactive" key={name} role="button" tabIndex={0} aria-label={`View ${name} service details`}
+                onClick={() => setSelectedService(service)}
+                onKeyDown={event => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    setSelectedService(service);
+                  }
+                }}>
+                {content}
+              </article>
+            );
+          })}
+        </section>
+        <section className="process"><div><small>OUR PROCESS</small><h2>From Concept<br/>to Completion.</h2></div>{['Discover','Plan','Create','Deliver','Measure'].map((x,i)=><div key={x}><b>0{i+1}</b><strong>{x}</strong><span>Focused work that moves your vision forward.</span></div>)}</section>
+      </main>
+      <CTA />
+      {selectedService && <ServiceModal service={selectedService} onClose={() => setSelectedService(null)} />}
+    </>
+  );
+}
 
 type WorkCard = Project & {
   key: number;
