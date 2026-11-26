@@ -509,7 +509,7 @@ const localWork: WorkCard[] = projects.slice(0, 6).map((project, index) => ({
 function WorkCover({ project }: { project: WorkCard }) {
   if (project.youtubeId) return <ProjectVideo id={project.youtubeId} title={project.title}/>;
   if (project.facebookUrl) return <FacebookProjectVideo url={project.facebookUrl} title={project.title}/>;
-  return <img loading="lazy" decoding="async" src={project.image ? optimizedImage(project.image).fallback : IMG.gallery} alt={project.title}/>;
+  return <ResponsiveImage asset={optimizedImage(project.image || IMG.gallery)} alt={project.title} sizes="(max-width: 600px) 100vw, (max-width: 900px) 50vw, 33vw"/>;
 }
 
 const GALLERY_BATCH_SIZE = 6;
