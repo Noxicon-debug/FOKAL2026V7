@@ -211,20 +211,38 @@ function CTA(){return <section className="strip-cta"><div><b>Let's Work Together
 export function HomePage() {
   const [showreelOpen, setShowreelOpen] = useState(false);
   const [showreelFailed, setShowreelFailed] = useState(false);
-  const clients = [...new Map(homeClients.map(client => [client.name, client])).values()];
+  const clients = new Map(clientNames.map((name, index) => [name.toLowerCase(), { name, image: clientLogoUrls[index] }]));
+  for (const client of homeClients) clients.set(client.name.toLowerCase(), client);
 
   return <div className="cinematic-home">
     <section className="home-hero">
       <BackgroundVideo asset={HOME_HERO_VIDEO} className="hero-video" priority paused={showreelOpen}/>
       <div className="hero-copy">
+        <small className="home-eyebrow">A Papua New Guinean creative production company</small>
         <h1>DRIVEN BY <strong>CREATIVITY</strong><br/>BACKED BY <strong>EXPERIENCE</strong>,<br/>INSPIRED BY <strong>YOU</strong>.</h1>
         <p>Media production, marketing and events across Papua New Guinea.</p>
         <div className="hero-actions">
-          <Dialog.Root open={showreelOpen} onOpenChange={open => {
+          <Button to="/gallery">Explore Our Work</Button>
+          <Link className="outline-btn" to="/booking">Get a Quote <ArrowRight size={17} aria-hidden="true"/></Link>
+        </div>
+      </div>
+      <div className="hero-metrics"><Stats /></div>
+    </section>
+
+    <section className="home-section studio-intro" aria-labelledby="home-studio">
+      <div className="home-shell">
+        <div>
+          <small className="home-eyebrow">Who we are</small>
+          <h2 id="home-studio">Fokal Solutions Limited</h2>
+          <strong className="studio-tagline">Driven by Creativity, Backed by Experience, Inspired by You.</strong>
+          <p>We’re a Papua New Guinean media production, marketing and events company. Our team brings creative storytelling, technical expertise and strategy together to help organisations reach their audiences.</p>
+          <Link className="editorial-text-link" to="/about">More about us <ArrowRight size={17} aria-hidden="true"/></Link>
+        </div>
+        <Dialog.Root open={showreelOpen} onOpenChange={open => {
             setShowreelFailed(false);
             setShowreelOpen(open);
           }}>
-            <Dialog.Trigger className="blue-btn">Watch Showreel <Video size={18} aria-hidden="true"/></Dialog.Trigger>
+            <Dialog.Trigger className="home-team-showreel" aria-label="Watch Fokal showreel"><ResponsiveImage asset={HOME_TEAM_IMAGE} alt="Fokal team at work" sizes="(max-width: 760px) 100vw, 50vw"/><span aria-hidden="true">▶</span></Dialog.Trigger>
             <Dialog.Portal>
               <Dialog.Overlay className="showreel-overlay"/>
               <Dialog.Content className="showreel-dialog" aria-describedby={undefined}>
@@ -249,7 +267,21 @@ export function HomePage() {
               </Dialog.Content>
             </Dialog.Portal>
           </Dialog.Root>
-          <Link className="outline-btn" to="/gallery">View Our Work <ArrowRight size={17}/></Link>
+      </div>
+    </section>
+
+    <section className="home-section service-ribbon-section" aria-labelledby="home-services">
+      <div className="home-shell">
+        <div className="editorial-section-heading">
+          <div><small className="home-eyebrow">Our services</small><h2 id="home-services">End-to-end creative and production services</h2></div>
+          <Link className="editorial-text-link" to="/services">Explore services <ArrowRight size={17}/></Link>
+        </div>
+        <div className="service-ribbon">
+          <article><Video aria-hidden="true"/><h3>Media &amp; Film Production</h3><p>Documentaries, campaign films, event coverage and photography.</p></article>
+          <article><Megaphone aria-hidden="true"/><h3>Marketing &amp; Branding</h3><p>Campaign strategy, digital content and visual identities.</p></article>
+          <article><Radio aria-hidden="true"/><h3>Live Streaming</h3><p>Multi-camera broadcasts for conferences, ceremonies and live events.</p></article>
+          <article><CalendarDays aria-hidden="true"/><h3>Event Production</h3><p>Planning, coordination and on-site delivery for events.</p></article>
+          <article><Lightbulb aria-hidden="true"/><h3>Staging &amp; AV</h3><p>Stage, lighting, sound and screens for live productions.</p></article>
         </div>
       </div>
     </section>
@@ -257,7 +289,7 @@ export function HomePage() {
     <section className="home-section home-work" aria-labelledby="selected-work">
       <div className="home-shell">
         <div className="editorial-section-heading">
-          <h2 id="selected-work">Selected work</h2>
+          <div><small className="home-eyebrow">Featured projects</small><h2 id="selected-work">Our work in action</h2></div>
           <Link className="editorial-text-link" to="/gallery">All projects <ArrowRight size={17}/></Link>
         </div>
         <div className="work-grid">
@@ -266,16 +298,12 @@ export function HomePage() {
             const title = photography ? cupTitle : homeProjectUpdates[index]?.title ?? project.title;
             const cover = photography ? cupPhotos[0].src : project.image;
             const route = photography ? '/photography' : '/projects/' + projectSlugs[index];
-            const youtubeId = photography ? undefined : homeProjectUpdates[index]?.youtubeId ?? project.youtubeId;
             return <article className="editorial-project" key={route}>
-              {youtubeId && <div className="inline-project-video">
-                <ClickToPlay title={title} youtubeId={youtubeId} poster={optimizedImage(cover).fallback} showTranscriptLink={false}/>
-              </div>}
               <Link to={route}>
-                {!youtubeId && <ResponsiveImage asset={optimizedImage(cover)} alt="" sizes="(max-width: 600px) 100vw, 50vw"/>}
+                <ResponsiveImage asset={optimizedImage(cover)} alt="" sizes="(max-width: 960px) 50vw, 25vw"/>
                 <div className="editorial-project-title">
                   <div><small>{photography ? 'Photography' : project.category}</small><h3>{title}</h3></div>
-                  <ArrowRight size={20} aria-hidden="true"/>
+                  <ArrowRight size={19} aria-hidden="true"/>
                 </div>
               </Link>
             </article>;
@@ -284,63 +312,54 @@ export function HomePage() {
       </div>
     </section>
 
-    <section className="home-section service-ribbon-section" aria-labelledby="home-services">
+    <section className="home-section home-partners" aria-label="Why choose Fokal and our clients">
       <div className="home-shell">
-        <div className="editorial-section-heading">
-          <h2 id="home-services">What we do</h2>
-          <Link className="editorial-text-link" to="/services">Explore services <ArrowRight size={17}/></Link>
-        </div>
-        <div className="service-ribbon">
-          {services.map(([name, Icon, copy]) => <article key={name}><Icon aria-hidden="true"/><h3>{name}</h3><p>{copy}</p></article>)}
-        </div>
-      </div>
-    </section>
-
-    <section className="home-section home-proof" aria-labelledby="home-clients">
-      <div className="home-shell">
-        <div className="editorial-section-heading"><h2 id="home-clients">Our clients</h2></div>
-        <div className="client-logo-strip">
-          <svg className="client-logo-filters" aria-hidden="true" width="0" height="0">
-            <filter id="client-logo-remove-white" colorInterpolationFilters="sRGB">
-              <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -.2126 -.7152 -.0722 0 1"/>
-              <feComponentTransfer><feFuncA type="linear" slope="12" intercept="-.24"/></feComponentTransfer>
-              <feComposite in="SourceGraphic" operator="in"/>
-            </filter>
-          </svg>
-          <div className="client-logo-track">
-            {[false, true].map(copy => (
-              <ul key={String(copy)} className="editorial-clients" aria-hidden={copy || undefined}>
-                {clients.map(client => (
-                  <li key={client.name}>
-                    <ResponsiveImage
-                      asset={optimizedImage(client.image)}
-                      alt={copy ? '' : client.name}
-                      sizes="200px"
-                      className={client.name === 'BSP' || client.name === 'SLMP' ? undefined : 'client-logo-transparent'}
-                    />
-                  </li>
-                ))}
-              </ul>
-            ))}
+        <div className="home-reasons">
+          <ResponsiveImage asset={HOME_HERO_IMAGE} alt="" sizes="(max-width: 760px) 100vw, 50vw"/>
+          <div>
+            <small className="home-eyebrow">Why choose Fokal</small>
+            <h2>A creative partner across Papua New Guinea</h2>
+            <ul>
+              <li><Check aria-hidden="true"/> Media, marketing and event production in one team</li>
+              <li><Check aria-hidden="true"/> Local knowledge and nationwide coverage</li>
+              <li><Check aria-hidden="true"/> Experience with corporate, public-sector and development projects</li>
+            </ul>
           </div>
         </div>
-        <Stats/>
-      </div>
-    </section>
-
-    <section className="home-section studio-intro" aria-labelledby="home-studio">
-      <div className="home-shell">
-        <ResponsiveImage asset={HOME_TEAM_IMAGE} alt="Fokal team at work" sizes="(max-width: 760px) 100vw, 50vw"/>
-        <div>
-          <h2 id="home-studio">A creative studio based in Papua New Guinea</h2>
-          <p>Fokal Solutions Limited is a Papua New Guinea based production, marketing and events company. Our team of storytellers, technicians and strategists connects brands with people through powerful content and meaningful experiences.</p>
-          <Link className="editorial-text-link" to="/about#directors">Meet the team <ArrowRight size={17}/></Link>
+        <div className="home-client-carousel">
+          <h2 id="home-clients">Our clients</h2>
+          <div className="home-client-viewport" aria-labelledby="home-clients">
+            <div className="home-client-track">
+              {[false, true].map(copy => (
+                <ul key={String(copy)} aria-hidden={copy || undefined}>
+                  {[...clients.values()].map(client => (
+                    <li key={client.name}>
+                      {client.image
+                        ? <ResponsiveImage asset={optimizedImage(client.image)} alt={copy ? '' : client.name} sizes="128px"/>
+                        : client.name}
+                    </li>
+                  ))}
+                </ul>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </section>
-    <section className="strip-cta">
-      <div><h2>Let’s work together</h2><p>Tell us about your next project.</p></div>
-      <Button to="/booking">Get a Quote</Button>
+
+    <section className="home-project-cta" aria-labelledby="home-contact">
+      <ResponsiveImage asset={optimizedImage('/media/contact-poster.webp')} alt="" sizes="100vw"/>
+      <div className="home-shell">
+        <div>
+          <small className="home-eyebrow">Let’s work together</small>
+          <h2 id="home-contact">Have a project in mind?</h2>
+          <p>Tell us what you’re planning, from a single shoot to a full-scale event.</p>
+        </div>
+        <div className="hero-actions">
+          <Button to="/booking">Get a Quote</Button>
+          <Link className="outline-btn" to="/contact">Contact Our Team <ArrowRight size={17} aria-hidden="true"/></Link>
+        </div>
+      </div>
     </section>
   </div>;
 }
