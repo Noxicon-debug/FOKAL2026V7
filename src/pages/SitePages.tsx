@@ -473,7 +473,7 @@ function ServiceThumbnail({images,alt}:{images:string[],alt:string}){
  const [hasInteracted,setHasInteracted]=useState(false);
  useEffect(()=>{if(!hasInteracted || images.length<2)return;const t=setInterval(()=>setIdx(i=>(i+1)%images.length),3500);return()=>clearInterval(t);},[hasInteracted,images.length]);
  const selectImage=(next:number)=>{setHasInteracted(true);setIdx(next);};
- return <div className="service-thumb-wrap">{images.slice(0,hasInteracted?images.length:1).map((src,i)=><ResponsiveImage key={src} asset={optimizedImage(src)} alt={site.alt(`services:${alt}:${i}`, alt)} sizes="(max-width: 900px) 100vw, 45vw" className={i===idx?'active':''}/>) }<div className="service-thumb-dots">{images.map((_,i)=><button key={i} className={i===idx?'active':''} onClick={e=>{e.stopPropagation();selectImage(i);}} aria-label={`Show image ${i+1}`}/>)}</div></div>;
+ return <div className="service-thumb-wrap">{images.slice(0,hasInteracted?images.length:1).map((src,i)=><ResponsiveImage key={src} asset={optimizedImage(src)} alt={site.alt(`services:${alt}:${i}`, alt)} sizes="(max-width: 900px) 100vw, 45vw" className={i===idx?'active':''}/>) }{images.length > 1 && <div className="service-thumb-dots">{images.map((_,i)=><button key={i} className={i===idx?'active':''} onClick={e=>{e.stopPropagation();selectImage(i);}} aria-label={`Show ${alt} image ${i+1}`} aria-pressed={i===idx}/>)}</div>}</div>;
 }
 const photographyShowcase = [
   {
@@ -547,45 +547,45 @@ export function ServicesPage() {
   return (
     <>
       <PageBanner eyebrow="OUR SERVICES" title={site.content.copy?.["services.hero"]?.trim() || <>Solutions that bring<br/>your vision to life.</>} copy="A full range of media production, marketing and events solutions tailored to exceed your expectations." image="/media/image-34-768.webp" animatedBackground/>
-      <div className="light-page">
-        <section className="services-intro"><SectionLabel>What We Do</SectionLabel><h2>Creative &amp; Production Services</h2><p>Fokal Solutions Limited delivers end-to-end creative and strategic services that empower brands, organisations, and communities to communicate effectively and make a meaningful impact. Our work spans media production, marketing, research, and live event execution, offering clients a one-stop partner for visual storytelling, audience engagement, insight-driven strategy, and memorable experiences. Every service we provide is tailored to our clients' goals, ensuring purposeful, professional, and grounded outcomes.</p></section>
-        <section className="service-grid">
-          {services.map(source => {
-            const [name, Icon, defaultCopy, defaults] = source;
+      <section className="landing-shell landing-band services-overview" aria-labelledby="service-offerings">
+        <div className="services-overview-heading">
+          <SectionLabel>What We Do</SectionLabel>
+          <h2 id="service-offerings">Creative &amp; Production Services</h2>
+          <p>From the first brief to final delivery, we help organisations across Papua New Guinea produce content, reach audiences and run events.</p>
+        </div>
+        <div className="services-offerings">
+          {services.map(([name, Icon, defaultCopy, defaults]) => {
             const copy = site.copy(`service.${name}`, defaultCopy);
             const images = defaults.map((image, index) => site.image(`services:${name}:${index}`) ?? image);
             const service: Service = [name, Icon, copy, images];
             const page = servicePages.find(entry => entry.name === name);
-            const content = (
-              <>
-                <div className="service-card-text">
-                  <Icon aria-hidden="true" />
-                  <h3>{name}</h3>
-                  <p>{copy}</p>
-                  {['Creative strategy', 'Professional production', 'Experienced team', 'Reliable delivery'].map(item => <span key={item}><Check /> {item}</span>)}
-                  <b className="service-card-action">Explore service <ArrowRight /></b>
-                </div>
-                <ServiceThumbnail images={images} alt={name} />
-              </>
-            );
-            return page ? (
-              <Link className="service-card-interactive" key={name} to={`/services/${page.slug}`} aria-label={`Explore ${name}`}>{content}</Link>
-            ) : (
-              <article className="service-card-interactive" key={name} role="button" tabIndex={0} aria-label={`View ${name} service details`}
-                onClick={() => setSelectedService(service)}
-                onKeyDown={event => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault();
-                    setSelectedService(service);
-                  }
-                }}>
-                {content}
-              </article>
-            );
+            return <article className="service-offering" key={name}>
+              <ServiceThumbnail images={images} alt={name}/>
+              <div className="service-offering-copy">
+                <Icon aria-hidden="true"/>
+                <h3>{name}</h3>
+                <p>{copy}</p>
+                {page
+                  ? <Link className="landing-button" to={`/services/${page.slug}`} aria-label={`Explore ${name}`}>Explore service <ArrowRight size={17}/></Link>
+                  : <button type="button" className="landing-button" aria-label={`View ${name} service details`}
+                    onClick={() => setSelectedService(service)}>Explore service <ArrowRight size={17}/></button>}
+              </div>
+            </article>;
           })}
-        </section>
-        <section className="process" style={site.background('services:process')}><div><small>OUR PROCESS</small><h2>From Concept<br/>to Completion.</h2></div>{['Discover','Plan','Create','Deliver','Measure'].map((x,i)=><div key={x}><b>0{i+1}</b><strong>{x}</strong><span>Focused work that moves your vision forward.</span></div>)}</section>
-      </div>
+        </div>
+      </section>
+      <section className="landing-journey services-journey" style={site.background('services:process')} aria-labelledby="services-process">
+        <div className="landing-shell">
+          <h2 id="services-process">Our Process</h2>
+          <ol>{[
+            ['Discover', 'We clarify your goals, audience and brief.'],
+            ['Plan', 'We agree on the approach, schedule and deliverables.'],
+            ['Create', 'Our team produces the work and reviews it with you.'],
+            ['Deliver', 'We deliver the agreed assets or run the event.'],
+            ['Measure', 'We review results against the original goals.'],
+          ].map(([step, description]) => <li key={step}><strong>{step}</strong><p>{description}</p></li>)}</ol>
+        </div>
+      </section>
       <CTA />
       {selectedService && <ServiceModal service={selectedService} onClose={() => setSelectedService(null)} />}
     </>
