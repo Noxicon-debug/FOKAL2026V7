@@ -1,3 +1,4 @@
+import { useSiteContent } from '../layout/SiteContentProvider';
 import { Helmet } from 'react-helmet-async';
 import { useLocation } from 'react-router-dom';
 import publicPages from '../../lib/public-pages.json';
@@ -15,6 +16,7 @@ const business = {
 };
 
 export default function SiteMeta() {
+  const site = useSiteContent();
   const { pathname } = useLocation();
   const path = pathname.replace(/\/+$/, '') || '/';
   if (path.startsWith('/work/')) return null;
@@ -23,19 +25,22 @@ export default function SiteMeta() {
   if (!page) return <Helmet><title>Page Not Found | Fokal Solutions</title><meta name="robots" content="noindex" /></Helmet>;
 
   const canonical = origin + path;
-  const image = new URL(page.image ?? '/media/home-1280.webp', origin).href;
+  const metadata = site.content.metadata?.[path];
+  const title = metadata?.title?.trim() || page.title;
+  const description = metadata?.description?.trim() || page.description;
+  const image = site.image('share:' + path) ?? new URL(page.image ?? '/media/home-1280.webp', origin).href;
 
   return (
     <Helmet>
-      <title>{page.title}</title>
-      <meta name="description" content={page.description} />
+      <title>{title}</title>
+      <meta name="description" content={description} />
       <link rel="canonical" href={canonical} />
-      <meta property="og:title" content={page.title} />
-      <meta property="og:description" content={page.description} />
+      <meta property="og:title" content={title} />
+      <meta property="og:description" content={description} />
       <meta property="og:url" content={canonical} />
       <meta property="og:image" content={image} />
-      <meta name="twitter:title" content={page.title} />
-      <meta name="twitter:description" content={page.description} />
+      <meta name="twitter:title" content={title} />
+      <meta name="twitter:description" content={description} />
       <meta name="twitter:url" content={canonical} />
       <meta name="twitter:image" content={image} />
       <script type="application/ld+json">{JSON.stringify(business)}</script>

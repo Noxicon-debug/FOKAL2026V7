@@ -2,3 +2,7 @@
   command = "pnpm run build"
   publish = "dist"
   functions = "netlify/functions"
+
+[[edge_functions]]
+  function = "cms-metadata"
+  path = "/*"

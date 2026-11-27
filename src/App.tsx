@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
+import SiteContentProvider from './components/layout/SiteContentProvider';
 import Layout from './components/layout/Layout';
 import LoginPage from './pages/LoginPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
@@ -54,7 +55,7 @@ function App() {
           <Route
             path="*"
             element={
-              <Layout>
+              <SiteContentProvider><Layout>
                 <Suspense fallback={<main className="route-loading">Loading…</main>}><AnimatePresence mode="wait">
                   <Routes location={location} key={location.pathname}>
                     <Route path="/" element={<HomePage />} />
@@ -71,7 +72,7 @@ function App() {
                     <Route path="*" element={<NotFoundPage />} />
                   </Routes>
                 </AnimatePresence></Suspense>
-              </Layout>
+              </Layout></SiteContentProvider>
             }
           />
         </Routes>

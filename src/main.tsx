@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import App from "./App.tsx";
 import './index.css';
+import './pages/landing-pages.css';
 
 if (typeof window !== "undefined") {
   const sendToParent = (data: any) => {

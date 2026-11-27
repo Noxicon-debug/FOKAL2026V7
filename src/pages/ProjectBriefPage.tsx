@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import PageBanner from '../components/layout/PageBanner';
 
 const checklists: [string, string[]][] = [
   ['Photography or video shoot', [
@@ -19,12 +20,10 @@ const checklists: [string, string[]][] = [
 ];
 
 export default function ProjectBriefPage() {
-  return <main className="light-page pt-32">
-    <div className="mx-auto max-w-3xl space-y-8">
-      <div className="space-y-3">
-        <h1 className="text-4xl font-bold">What to prepare for your project</h1>
-        <p>Start with your goal, preferred date, location, audience, and any budget or delivery deadlines you already know.</p>
-      </div>
+  return <>
+    <PageBanner eyebrow="Project Brief" title="What to prepare for your project"
+      copy="Start with your goal, preferred date, location, audience, and any budget or delivery deadlines you already know."/>
+    <div className="light-page"><div className="mx-auto max-w-3xl space-y-8">
       {checklists.map(([title, items]) => <section key={title} className="glass-card space-y-3 p-6">
         <h2 className="text-xl font-semibold">{title}</h2>
         <ul className="list-disc space-y-2 pl-5">
@@ -32,6 +31,6 @@ export default function ProjectBriefPage() {
         </ul>
       </section>)}
       <Link className="blue-btn" to="/booking">Request a quote</Link>
-    </div>
-  </main>;
+    </div></div>
+  </>;
 }

@@ -1,6 +1,7 @@
 import optimizedMedia from './optimized-media.json';
 export function optimizedImage(src: string): ResponsiveImageAsset {
-  const name = (optimizedMedia as Record<string,string>)[src];
+  const name = (optimizedMedia as Record<string,string>)[src.split('?token=')[0]] ??
+    (/^\/media\/(image-\d+)-768\.webp$/.exec(src)?.[1]);
   return name ? {fallback:`/media/${name}-768.webp`,webp:Object.fromEntries([480,768,1280,1920].map(w=>[w,`/media/${name}-${w}.webp`]))} : {fallback:src};
 }
 export type ResponsiveImageAsset = {

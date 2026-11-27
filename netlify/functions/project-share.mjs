@@ -1,3 +1,4 @@
+import optimizedMedia from '../../src/lib/optimized-media.json' with { type: 'json' };
 import { createClient } from '@supabase/supabase-js';
 
 const site = 'https://fokalltd.com';
@@ -9,6 +10,8 @@ const escapeHtml = value => String(value).replace(/[&<>"']/g, char => ({
 
 function coverUrl(reference, supabase) {
   if (!reference) return site + fallbackCover;
+  const bundled = optimizedMedia[reference.split('?token=')[0]];
+  if (bundled) return site + '/media/' + bundled + '-768.webp';
   if (/^\/[^/\\]/.test(reference)) return site + reference;
   if (/^https:\/\//i.test(reference)) return reference;
   return supabase.storage.from('images').getPublicUrl(reference).data.publicUrl;

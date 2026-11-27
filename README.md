@@ -20,16 +20,33 @@ verified submissions to the private Supabase `form_submissions` table.
 If enquiries should also reach an inbox, configure the recipient under
 **Forms → Submission notifications** in Netlify.
 
+## Site content CMS
+
+Sign in at `/admin`. Page Content, Page Images, Media Library, Search &
+Sharing, Team, Theme, and Site Settings share the site draft and private
+preview. Editors and administrators publish and restore versions. Contributors
+can prepare site drafts and unpublished portfolio projects. Enquiries and
+Publishing History are available to editors and administrators.
+
+Apply the Supabase migrations before deploying the frontend. Existing gallery
+editors migrate to the Editor role. A trusted Supabase administrator sets the
+first identified account's role in `public.cms_members` to `administrator`;
+subsequent access is managed in the CMS Users section. Deploy the Supabase `cms-users` Edge Function and add the production
+`/reset-password` URL to the Supabase Auth redirect allowlist. The function
+allows the Fokal production origins and the local Vite preview.
+
+For published Search & Sharing metadata in initial HTML, expose
+`SUPABASE_URL` and the public `SUPABASE_ANON_KEY` to Netlify Edge Functions.
+The edge function reads only the live snapshot. Static metadata remains the
+fallback when the runtime settings are unavailable.
+
 ## Our Work CMS
 
 Use `/admin` to add projects, upload photos, and publish to `/gallery`. Drafts
 are visible to editors. Saving changes to a published entry updates the live
 gallery. Photos accept JPEG, PNG, WebP, GIF, or AVIF files up to 10 MB.
 
-Before deploying the frontend, apply the Supabase migrations in order. Grant
-each approved editor the boolean `gallery_editor: true` in Supabase Auth
-`app_metadata` using a trusted admin session or the Auth Admin API. Editors
-should sign out and back in after the grant so their session receives it.
+Before deploying the frontend, apply the Supabase migrations in order. Assign editor access in the CMS Users section.
 Configure `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` for the frontend.
 Without those settings, `/gallery` displays the bundled portfolio for local preview.
 

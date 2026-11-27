@@ -1,3 +1,8 @@
+import { useCmsRole } from '../lib/hooks/useCmsRole';
+import { CmsUsers, CmsEnquiries, CmsHistory } from './CmsOperations';
+import SiteContentEditor, { type SiteEditorSection } from './SiteContentEditor';
+import { Image, Palette, Users, Briefcase, Settings } from 'lucide-react';
+import './cms-layout.css';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -39,10 +44,17 @@ const errorMessage = (error: unknown, fallback: string) =>
 export default function AdminPage() {
   const { user, signOut, loading } = useAuth();
   const navigate = useNavigate();
-  const editorId = user?.app_metadata.gallery_editor === true ? user.id : undefined;
+  const membership = useCmsRole(user?.id);
+  const role = membership.data;
+  const editorId = role ? user?.id : undefined;
+  const canPublish = role === 'editor' || role === 'administrator';
   const categories = useGalleryCategories();
   const projects = useGalleryProjects('editor', editorId);
   const { saveProject, deleteProject } = useAdminMutations();
+  type Operation = 'Users' | 'Enquiries' | 'Publishing History';
+  const [section, setSection] = useState<SiteEditorSection | Operation | 'Our Work'>('Our Work');
+  const [siteDirty, setSiteDirty] = useState(false);
+  const [siteSection, setSiteSection] = useState<SiteEditorSection>();
   const [form, setForm] = useState<ProjectForm | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadPreviews, setUploadPreviews] = useState<Record<string, string>>({});
@@ -62,6 +74,7 @@ export default function AdminPage() {
     if (!form || busy) return;
     const { media, ...fields } = form;
     const project = { ...fields, title: fields.title.trim(), description: (fields.description ?? '').trim(), video_url: fields.video_url.trim(), publication_state };
+    if (!canPublish && publication_state !== 'draft') return;
     if (publication_state === 'published' && (!project.title || !project.category_id || !project.description || !project.image_url)) {
       toast.error('Add a title, category, description, and cover image to publish.');
       return;
@@ -136,10 +149,10 @@ export default function AdminPage() {
   };
 
   return (
-    <main className="min-h-screen bg-dark-950 px-4 py-12 text-white">
-      <div className="mx-auto max-w-6xl space-y-8">
-        <header className="flex flex-wrap items-center justify-between gap-4">
-          <h1 className="text-3xl font-bold">Our Work CMS</h1>
+    <main className="cms-shell min-h-screen text-white">
+      <div className="cms-frame">
+        <header className="cms-header">
+          <h1 className="text-3xl font-bold">Fokal CMS</h1>
           <div className="flex flex-wrap gap-3">
             <Button variant="outline" className={fieldClass} asChild><Link to="/gallery">View Our Work</Link></Button>
             <Button variant="outline" className={fieldClass} onClick={async () => {
@@ -152,7 +165,32 @@ export default function AdminPage() {
             }}>Sign out</Button>
           </div>
         </header>
-        {loading ? <p role="status">Checking access…</p> : !editorId ? (
+        <div className="cms-layout">
+          {editorId && <aside className="cms-sidebar">
+            <nav aria-label="CMS sections">
+              {([
+                ['Our Work', Briefcase], ['Page Content', Briefcase], ['Page Images', Image], ['Media Library', Image],
+                ['Search & Sharing', Settings], ['Team', Users], ['Theme', Palette], ['Site Settings', Settings],
+                ...(canPublish ? [['Enquiries', Briefcase], ['Publishing History', Briefcase]] as const : []),
+                ...(role === 'administrator' ? [['Users', Users]] as const : []),
+              ] as const).map(([name, Icon]) => (
+                <button type="button" aria-current={section === name ? 'page' : undefined} key={name} onClick={() => {
+                  setSection(name);
+                  if (name !== 'Our Work' && name !== 'Users' && name !== 'Enquiries' && name !== 'Publishing History') setSiteSection(name);
+                }}><Icon size={19} aria-hidden="true"/>{name}</button>
+              ))}
+            </nav>
+          </aside>}
+          <div className="cms-workspace">
+          {editorId && siteSection && <div hidden={section !== siteSection}>
+            <SiteContentEditor editorId={editorId} tab={siteSection} canPublish={canPublish} onDirty={setSiteDirty}/>
+          </div>}
+          {editorId && section === 'Users' && role === 'administrator' && <CmsUsers userId={editorId}/>}
+          {editorId && section === 'Enquiries' && canPublish && <CmsEnquiries userId={editorId}/>}
+          {editorId && section === 'Publishing History' && canPublish && <CmsHistory userId={editorId} dirty={siteDirty}/>}
+          {(section === 'Our Work' || !editorId) && <div className="cms-projects">
+            <h2>Our Work</h2>
+        {loading || (user && membership.isPending) ? <p role="status">Checking access…</p> : !editorId ? (
           <p role="alert">This account needs Our Work editor access. Contact your Supabase administrator.</p>
         ) : form ? (
           <form onSubmit={event => { event.preventDefault(); void save(form.publication_state); }}>
@@ -230,9 +268,9 @@ export default function AdminPage() {
               </div>
               <div className="flex flex-wrap gap-3">
                 <Button type="submit" className="bg-accent-500 text-dark-950">{form.publication_state === 'published' ? 'Save changes' : 'Save draft'}</Button>
-                {form.publication_state === 'draft'
+                {canPublish && (form.publication_state === 'draft'
                   ? <Button type="button" variant="outline" className={fieldClass} onClick={event => { if (event.currentTarget.form?.reportValidity()) void save('published'); }}>Publish</Button>
-                  : <Button type="button" variant="outline" className={fieldClass} onClick={event => { if (event.currentTarget.form?.reportValidity()) void save('draft'); }}>Unpublish</Button>}
+                  : <Button type="button" variant="outline" className={fieldClass} onClick={event => { if (event.currentTarget.form?.reportValidity()) void save('draft'); }}>Unpublish</Button>)}
                 <Button type="button" variant="outline" className={fieldClass} onClick={closeEditor}>Cancel</Button>
               </div>
             </fieldset>
@@ -258,8 +296,8 @@ export default function AdminPage() {
                       <p>{project.publication_state === 'published' ? 'Published' : 'Draft'}</p>
                     </CardHeader>
                     <CardContent className="flex flex-wrap gap-2">
-                      <Button className={fieldClass} variant="outline" disabled={busy || categories.isError} onClick={() => setForm(project)}>Edit</Button>
-                      <Button variant="destructive" disabled={busy} onClick={() => void remove(project)}>Delete</Button>
+                      <Button className={fieldClass} variant="outline" disabled={busy || categories.isError || (!canPublish && project.publication_state === 'published')} onClick={() => setForm(project)}>Edit</Button>
+                      {canPublish && <Button variant="destructive" disabled={busy} onClick={() => void remove(project)}>Delete</Button>}
                     </CardContent>
                   </Card>
                 </li>
@@ -268,6 +306,9 @@ export default function AdminPage() {
             </ul>
           </>
         )}
+          </div>}
+          </div>
+        </div>
       </div>
     </main>
   );
